@@ -40,14 +40,31 @@ impl<T> Spinlock<T> {
         //       Use AtomicBool::swap() to set the `lock` value to true.
         //       If the previous values (returned by swap) was also true, the lock is currently held.
         //       Only if the previous values was false, we can safely grant access and return the `SpinlockGuard`.
-        Some(SpinlockGuard { lock: self })
+
+        //Some(SpinlockGuard { lock: self })
+        
+        if self.is_locked() {
+            None
+        }
+        else {
+            self.lock.swap(true, Ordering::Relaxed);
+            Some(SpinlockGuard { lock: self })
+        }
     }
 
     /// Spin until the lock is acquired, then return a guard that allows access to the data.
     pub fn lock(&'_ self) -> SpinlockGuard<'_, T> {
         // TODO: The current implementation always grants access immediately.
         //       Use `try_lock()` repeatedly and only return, once the lock is successfully acquired.
-        SpinlockGuard { lock: self }
+
+        //SpinlockGuard { lock: self }
+        let spinlock = loop {
+            if let Some(s) = self.try_lock() {
+                break s;
+            }
+        };
+
+        spinlock
     }
 
     /// Unlock the spinlock, allowing other threads to acquire it.
@@ -55,13 +72,16 @@ impl<T> Spinlock<T> {
     /// and thus is not publicly accessible.
     fn unlock(&self) {
         // TODO: Set the `lock` variable to false, regardless of its previous value.
+        self.lock.swap(false, Ordering::Relaxed);
     }
     
     /// Check if the spinlock is currently locked.
     pub fn is_locked(&self) -> bool {
         // TODO: The current implementation always returns false, as if the lock is not currently acquired.
         //       Return the actual value of the `lock` variable.
-        false
+
+        //false
+        self.lock.load(Ordering::Relaxed)
     }
     
     /// Forcefully unlock the spinlock. This should only be used in exceptional cases.

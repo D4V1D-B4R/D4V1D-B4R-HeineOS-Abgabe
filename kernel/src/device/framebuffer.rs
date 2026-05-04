@@ -163,6 +163,20 @@ impl Framebuffer {
     /// Scroll the framebuffer content up by the specified number of lines.
     /// The freed space at the bottom is cleared to black.
     pub fn scroll_up(&mut self, lines: usize) {
-        todo!("framebuffer::scroll_up() not implemented yet");
+        //todo!("framebuffer::scroll_up() not implemented yet");       
+        let buffer = self.address as *mut u8;
+
+        let line_byte_size = lines * font_8x8::CHAR_HEIGHT * self.pitch;
+        let bytes_to_copy = (self.height - lines * font_8x8::CHAR_HEIGHT) * self.pitch;
+
+        unsafe {
+            core::ptr::copy(
+                buffer.add(line_byte_size),
+                buffer,
+                bytes_to_copy,
+            );
+
+            buffer.add(bytes_to_copy).write_bytes(0, line_byte_size);
+        }   
     }
 }

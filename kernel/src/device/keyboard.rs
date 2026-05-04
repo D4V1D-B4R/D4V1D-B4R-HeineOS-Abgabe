@@ -7,6 +7,7 @@
  */
 
 use bitflags::bitflags;
+use uefi_raw::protocol::hii::Key;
 use crate::device::cpu::IoPort;
 use crate::device::key::{KeyEvent, KeyModifiers};
 use crate::library::spinlock::Spinlock;
@@ -77,9 +78,9 @@ static SCAN_NUM_TAB: [u8; 13] = [  8, 9, 10, 53, 5, 6, 7, 27, 2, 3, 4, 11, 51 ];
 bitflags! {
     /// LED status flags for the keyboard.
     struct LedStatus: u8 {
-        const NUM_LOCK = 1;
-        const CAPS_LOCK = 2;
-        const SCROLL_LOCK = 4;
+        const SCROLL_LOCK = 1;
+        const NUM_LOCK = 2;
+        const CAPS_LOCK = 4;
     }
 }
 
@@ -141,7 +142,15 @@ impl Keyboard {
     /// If a complete key event has been decoded, it is returned.
     /// If no byte is available or the key event is not complete yet, None is returned.
     fn try_read_next_byte(&mut self) -> Option<KeyEvent> {
-        todo!("keyboard::try_read_next_byte() not implemented yet");
+        //todo!("keyboard::try_read_next_byte() not implemented yet");
+        if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } {
+            let data_byte = unsafe { self.data_port.inb() };
+
+            if self.decode_byte(data_byte) {
+                return Some(self.gather);
+            }
+        } 
+        None
     }
 
     /// Poll the keyboard for the next key event (press or release).
@@ -150,14 +159,23 @@ impl Keyboard {
     /// CAUTION: This function must not be used anymore, once the keyboard interrupt handler is active,
     /// because it directly reads from the keyboard controller and thus interferes with the interrupt handler.
     pub fn poll_key_event(&mut self) -> KeyEvent {
-        todo!("keyboard::poll_key_event() not implemented yet");
+        //todo!("keyboard::poll_key_event() not implemented yet");
+        loop {
+            if let Some(key_event) = self.try_read_next_byte() {
+                return key_event;
+            }
+        }
     }
 
     /// Poll the keyboard for the next key press event.
     /// This function blocks until a key press event has been received and decoded,
     /// discarding any key release events.
     pub fn poll_key_press(&mut self) -> KeyEvent {
-        todo!("keyboard::poll_key_press() not implemented yet");
+        loop {
+            if self.poll_key_event().pressed() {
+                return self.gather;
+            }
+        }
     }
 
     /// Set the repeat rate of the keyboard (determined by the speed and delay).
@@ -168,13 +186,74 @@ impl Keyboard {
     /// The delay determines how long a key must be pressed before the keyboard starts repeating it.
     /// Valid values are between 0 (minimum delay) and 3 (maximum delay).
     /// 0 = 250ms, 1 = 500ms, 2 = 750ms, 3 = 1000ms
-    pub fn set_repeat_rate(&mut self, delay: u8, speed: u8) {
-        todo!("keyboard::set_repeat_rate() not implemented yet");
+    pub fn set_repeat_rate(&mut self, delay: u8, speed: u8) { //TODO: SET REPEAT RATE TO DELAY,SPEED
+        //todo!("keyboard::set_repeat_rate() not implemented yet");
+        loop {
+            if unsafe { (self.control_port.inb() & (1 << 1)) == 0 } { //INPB
+                break;
+            }
+        }
+
+        unsafe { self.data_port.outb(243) }; //0xF3 = 243 decimal
+
+        loop {
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB
+                break;
+            }
+        }
+
+        if unsafe { self.data_port.inb() } == 250 { //0xFA
+            unsafe { self.data_port.outb(96) }; //96 langsam //todo: set with variables delay + speed
+        }
+        else {
+            panic!("FAILED ACK1");
+        }
+
+        loop {
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB
+                break;
+            }
+        }
+
+        if unsafe { self.data_port.inb() } != 250 { //0xFA
+            panic!("FAILED ACK2");
+        }
+
     }
 
     /// Turn on or off the specified keyboard LED.
     fn set_led(&mut self, led: LedStatus, on: bool) {
-        todo!("keyboard::set_led() not implemented yet");
+        //todo!("keyboard::set_led() not implemented yet");
+        loop {
+            if unsafe { (self.control_port.inb() & (1 << 1)) == 0 } { //INPB
+                break;
+            }
+        }
+
+        unsafe { self.data_port.outb(237) }; //0xED = 237 decimal
+
+        loop {
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB
+                break;
+            }
+        }
+
+        if unsafe { self.data_port.inb() } == 250 { //0xFA
+            unsafe { self.data_port.outb(led.bits()) }; //set led
+        }
+        else {
+            panic!("FAILED ACK1");
+        }
+
+        loop {
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB
+                break;
+            }
+        }
+
+        if unsafe { self.data_port.inb() } != 250 { //0xFA
+            panic!("FAILED ACK2");
+        }
     }
 
     /// Decode a single byte from the keyboard.

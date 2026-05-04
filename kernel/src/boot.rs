@@ -17,11 +17,17 @@
 #![allow(unreachable_code)]
 #![allow(unused_variables)]
 
+use core::fmt::Write;
+
 use log::{debug, error, info};
 use uefi::mem::memory_map::MemoryMapOwned;
-use crate::device::framebuffer::Framebuffer;
-use crate::device::terminal;
+use crate::allocator::global;
+use crate::device::framebuffer::{self, Framebuffer};
+use crate::device::keyboard;
+use crate::device::serial::COM1;
+use crate::device::terminal::{self, framebuffer, terminal};
 use crate::logger::Logger;
+extern crate alloc;
 
 #[macro_use]
 mod device;
@@ -29,6 +35,7 @@ mod library;
 mod logger;
 mod multiboot;
 mod demo;
+mod allocator;
 
 unsafe extern "C" {
     fn load_gdt();
@@ -80,7 +87,49 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     unsafe { load_gdt(); }
 
     // TODO: Call your demo code here.
+    //COM Port
+    global::init_allocator(consts::heap_start(), consts::heap_size());
 
+    COM1.lock().write_byte('H' as u8);
+
+    //Spinlock
+    let mut com1 = COM1.lock();
+    com1.write_str("COM1\n").unwrap();
+    drop(com1);
+    let mut com2 = COM1.lock();
+    com2.write_str("COM2\n").unwrap();
+    drop(com2);
+
+    //COM Port
+    COM1.lock().write_str("Hello World!\n");
+
+    //Framebuffer fun
+    let fb = terminal::framebuffer();
+
+    for x in 0..800 {
+        for y in 0..600 {
+            fb.lock().draw_pixel(x, y, framebuffer::color(x as u8, y as u8, 0));
+        }
+    }
+    fb.lock().draw_char('c', 10, 10, framebuffer::RED, framebuffer::GREEN);
+    fb.lock().draw_str("David", 10, 20, framebuffer::RED, framebuffer::BLUE);
+
+    //Terminal testing
+    let w = fb.lock().width();
+    let h = fb.lock().height();
+    println!("W-{}, H-{}", w, h);
+
+    demo::lesson1::text_demo();
+    for i in 1..20+1 {
+        println!("Hello, World! x{}", i);
+    }
+    demo::lesson1::keyboard_demo();
+
+    terminal::terminal().lock().clear();
+
+    
+
+    demo::lesson1::keyboard_demo();
     // Endless loop, as we cannot return from main().
     loop {}
 }
