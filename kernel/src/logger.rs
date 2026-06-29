@@ -6,17 +6,25 @@
  * License: GPLv3
  */
 
-use core::fmt::Write;
+use core::{fmt::Write, sync::atomic::{AtomicBool, Ordering::{self, Relaxed}}};
 use log::{Metadata, Record};
-use crate::device::serial::{self, COM1};
+use crate::device::{pit, serial::{self, COM1}};
 
 /// A simple logger implementing the `log::Log` trait, writing to the serial port (COM1).
-pub struct Logger {}
+pub struct Logger {
+    is_logging_to_terminal: AtomicBool,
+}
 
 impl Logger {
     /// Create a new logger.
     pub const fn new() -> Logger {
-        Logger {}
+        Logger {
+            is_logging_to_terminal: AtomicBool::new(false),
+        }
+    }
+
+    pub fn enable_terminal_logging(&self, enabled: bool) {
+        self.is_logging_to_terminal.store(enabled, Relaxed);
     }
 }
 
@@ -29,7 +37,6 @@ impl log::Log for Logger {
 
     /// Print a log record to the serial port.
     fn log(&self, record: &Record) {
-        // TODO: Write the log message to the serial port.
         let level = level_abbreviation(record.metadata().level());
         //let target = record.metadata().target();
         let args = record.args();
@@ -37,7 +44,12 @@ impl log::Log for Logger {
         let line = record.line().unwrap_or(0);
         //let path = record.module_path().unwrap_or("");
 
-        COM1.lock().write_fmt(format_args!("[0.000][{}][{}.{}] {}\n", level, file, line, args)).unwrap();
+        if self.is_logging_to_terminal.load(Relaxed) {
+            println!("[{}][{}][{}.{}] {}\n", pit::system_time(), level, file, line, args);
+        }
+        else {
+            COM1.lock().write_fmt(format_args!("[{}][{}][{}.{}] {}\n", pit::system_time(), level, file, line, args)).unwrap();
+        }
     }
 
     /// Flush the logger.

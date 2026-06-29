@@ -16,17 +16,22 @@
 #![allow(dead_code)]
 #![allow(unreachable_code)]
 #![allow(unused_variables)]
+#![allow(unused_imports)]
 
-use core::fmt::Write;
 
-use log::{debug, error, info};
+use core::arch::asm;
+use core::str::FromStr;
+
+use log::{LevelFilter, debug, error, info};
 use uefi::mem::memory_map::MemoryMapOwned;
 use crate::allocator::global;
 use crate::device::framebuffer::{self, Framebuffer};
-use crate::device::keyboard;
+use crate::device::{cpu, keyboard, pic, pit};
 use crate::device::serial::COM1;
 use crate::device::terminal::{self, framebuffer, terminal};
 use crate::logger::Logger;
+use crate::interrupt::idt;
+
 extern crate alloc;
 
 #[macro_use]
@@ -36,6 +41,10 @@ mod logger;
 mod multiboot;
 mod demo;
 mod allocator;
+mod consts;
+mod interrupt;
+mod thread;
+mod coroutine;
 
 unsafe extern "C" {
     fn load_gdt();
@@ -85,51 +94,51 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     // Load the Global Descriptor Table (code in boot.asm)
     unsafe { load_gdt(); }
+    /////////////////////////// SECTION FOR Implementations ///////////////////////////
 
-    // TODO: Call your demo code here.
-    //COM Port
-    global::init_allocator(consts::heap_start(), consts::heap_size());
+    global::init_allocator(consts::heap_start(), consts::HEAP_SIZE);
+    interrupt::idt::idt().load();
 
-    COM1.lock().write_byte('H' as u8);
+    pic::PIC.lock().init();
+    interrupt::dispatcher::init_interrupt_dispatcher();
+    keyboard::plugin();
 
-    //Spinlock
-    let mut com1 = COM1.lock();
-    com1.write_str("COM1\n").unwrap();
-    drop(com1);
-    let mut com2 = COM1.lock();
-    com2.write_str("COM2\n").unwrap();
-    drop(com2);
+    keyboard::KEYBOARD.lock().set_repeat_rate(3, 30);//pic disable interrupt can be done here
 
-    //COM Port
-    COM1.lock().write_str("Hello World!\n");
+    cpu::enable_int();
 
-    //Framebuffer fun
-    let fb = terminal::framebuffer();
+    pit::plugin();
 
-    for x in 0..800 {
-        for y in 0..600 {
-            fb.lock().draw_pixel(x, y, framebuffer::color(x as u8, y as u8, 0));
-        }
-    }
-    fb.lock().draw_char('c', 10, 10, framebuffer::RED, framebuffer::GREEN);
-    fb.lock().draw_str("David", 10, 20, framebuffer::RED, framebuffer::BLUE);
-
-    //Terminal testing
-    let w = fb.lock().width();
-    let h = fb.lock().height();
-    println!("W-{}, H-{}", w, h);
-
-    demo::lesson1::text_demo();
-    for i in 1..20+1 {
-        println!("Hello, World! x{}", i);
-    }
-    demo::lesson1::keyboard_demo();
-
-    terminal::terminal().lock().clear();
-
+    /////////////////////////// SECTION FOR KERNEL OPTIONS///////////////////////////
     
+    //Logger::enable_terminal_logging(&LOGGER, true);
+    
+    if let Some(cmdline) = multiboot.find_tag::<multiboot::CommandLineTag>(multiboot::TagType::CommandLine) {
+        let command_line = cmdline.as_str();
+        info!("Command line: '{}'", command_line);
 
-    demo::lesson1::keyboard_demo();
+        let log_level = LevelFilter::from_str(command_line);
+        info!("Log Level: {:?}", log_level);
+        log::set_max_level(log_level.unwrap_or(LevelFilter::Trace));
+    }
+
+    /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
+
+    //demo::lesson1::text_demo();
+    //demo::lesson1::keyboard_demo();
+
+    //terminal().lock().clear();
+    //demo::lesson1::keyboard_demo();
+
+    //demo::lesson2::heap_demo();
+    //demo::lesson2::speaker_demo();
+
+    //demo::lesson4::coroutine_demo();
+    //terminal().lock().clear();
+    demo::lesson4::thread_demo();
+
+    //demo::lesson2::piano_demo();
+
     // Endless loop, as we cannot return from main().
     loop {}
 }

@@ -10,5 +10,6 @@ path = "src/boot.rs"
 [dependencies]
 bitflags = "2.11.0"
 log = "0.4.29"
+nolock = { version = "0.4.1", default-features = false, features = ["queues"] }
 uefi = "0.36.1"
 uefi-raw = "0.13.0"

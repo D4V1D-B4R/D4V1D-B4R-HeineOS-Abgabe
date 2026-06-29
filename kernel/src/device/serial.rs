@@ -40,7 +40,6 @@ impl ComPort {
 
     /// Write a single byte to the COM port.
     pub fn write_byte(&mut self, byte: u8) {
-        //todo!("ComPort::write_byte() not implemented yet");
         unsafe { self.data_port.outb(byte) };
     }
 }
@@ -51,7 +50,6 @@ impl ComPort {
 impl fmt::Write for ComPort {
     /// Write a string to the COM port by iterating over each byte in the string and writing it using `write_byte()`.
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        // TODO: Write the string using write_byte()
         for c in s.chars() {
             self.write_byte(c as u8);
         }

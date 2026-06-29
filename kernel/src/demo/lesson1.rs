@@ -6,11 +6,10 @@
  * License: GPLv3
  */
 
-use crate::device::{key::Scancode, keyboard::Keyboard, terminal};
+use crate::device::{key::Scancode, keyboard::keyboard_buffer};
 
 /// A simple text demo, displaying formatted numbers.
 pub fn text_demo() {
-    //todo!("lesson1::text_demo() not implemented yet");
     println!("Text Demo:\n");
     println!("  | dec | hex | bin   |");
     println!("  |_____|_____|_______|");
@@ -23,17 +22,30 @@ pub fn text_demo() {
 pub fn keyboard_demo() {
     println!("Keyboard Demo:");
     println!("Press keys on your keyboard. Press 'Esc' to exit the demo.\n");
-
-    let mut keyboard: Keyboard = Keyboard::new();
-    keyboard.set_repeat_rate(0, 0);
+    let key_buffer = keyboard_buffer();
 
     loop {
-        let key_event = keyboard.poll_key_press();
+        let key_event = key_buffer.poll_key_event();
+        //let c = input::read_char();
         println!("{:?}", key_event);
-        //print!("{}", keyboard.poll_key_press().ascii().unwrap_or(' '));
         if key_event.scancode() == Some(Scancode::Escape) {
             break;
         }
     }
     println!("Finished :)");
 }
+
+/*pub fn keyboard_demo() {
+    println!("Keyboard Demo:");
+    println!("Press keys on your keyboard. Press 'Esc' to exit the demo.\n");
+    let mut keyboard: Keyboard = Keyboard::new();
+
+    loop {
+        let key_event = keyboard.poll_key_press();
+        println!("{:?}", key_event);
+        if key_event.scancode() == Some(Scancode::Escape) {
+            break;
+        }
+    }
+    println!("Finished :)");
+}*/

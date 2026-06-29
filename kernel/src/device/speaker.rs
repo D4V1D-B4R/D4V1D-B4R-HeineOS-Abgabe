@@ -10,6 +10,7 @@
  */
 
 use crate::device::cpu::IoPort;
+use crate::device::pit;
 use crate::library::spinlock::Spinlock;
 
 pub static SPEAKER: Spinlock<Speaker> = Spinlock::new(Speaker::new());
@@ -89,24 +90,41 @@ impl Speaker {
 
     /// Play a specific frequency for a given amount of time (milliseconds).
     pub fn play(&mut self, frequency: usize, duration: usize) {
-        todo!("Speaker::play() is not implemented yet.")
+        let counter = PIT_FREQUENCY / frequency;
+
+        //0xB6 = 10 11 011 0 [Channel 2 | First low, then high counter | OP-Mode 3 | Binary Counter]
+        unsafe { self.pit_ctrl_port.outb(0xB6) };
+        unsafe { self.pit_data2_port.outb((counter & 0xFF) as u8) };
+        unsafe { self.pit_data2_port.outb((counter >> 0x8) as u8) };
+
+        self.on();
+        //self.delay(duration);
+        //pit::wait(duration);
+        //self.off();
     }
 
     /// Turn on the speaker.
     /// The played tone is dependent on counter 2 of the PIT.
     pub fn on(&mut self) {
-        todo!("Speaker::on() is not implemented yet.")
+        let status = unsafe { self.ppi_port.inb() };
+        unsafe { self.ppi_port.outb(status | 0x3) };
     }
 
     /// Turn off the speaker.
     pub fn off(&mut self) {
-        todo!("Speaker::off() is not implemented yet.")
+        let status = unsafe { self.ppi_port.inb() & 0xFC};
+        unsafe { self.ppi_port.outb(status) };
     }
 
     /// Return the current value of the PIT counter (16-bit).
     /// Used by `delay()` to check if the counter has reached 0 or has been reloaded.
     fn read_counter(&mut self) -> u16 {
-        todo!("Speaker::read_counter() is not implemented yet.")
+        unsafe { self.pit_ctrl_port.outb(0x0)};
+        let low = unsafe { self.pit_data0_port.inb()} as u16;
+        let high = unsafe { self.pit_data0_port.inb()} as u16;
+
+        (high << 8) | low
+        //unsafe { self.pit_ctrl_port.inw() as u16 }
     }
 
     /// Wait for a given amount of time in milliseconds using counter 0 of the PIT.
@@ -114,7 +132,33 @@ impl Speaker {
     /// This means that the counter will count down from 1193 to 0 and then reload itself.
     /// Counting from 1193 to 0 takes 1ms.
     fn delay(&mut self, duration: usize) {
-        todo!("Speaker::delay() is not implemented yet.")
+        let freq = PIT_FREQUENCY / 1000;
+
+        //0x34 = 00 11 010 0 [Channel 0 | First low, then high counter | OP-Mode 2 | Binary Counter]
+        unsafe { self.pit_ctrl_port.outb(0x34) };
+        unsafe { self.pit_data0_port.outb((freq & 256) as u8) };
+        unsafe { self.pit_data0_port.outb((freq >> 8) as u8) };
+
+        let mut elapsed_ms = 0;
+        let mut previous = self.read_counter();
+
+        while elapsed_ms < duration {
+            let current = self.read_counter();
+            // In mode 2 the counter counts downward. //KI Müll
+            //
+            // When it reloads:
+            // previous might be small
+            // current becomes large again.
+            //
+            // Example:
+            // 5 -> 1190
+            //
+            // This indicates one timer period elapsed.
+            if current > previous {
+                elapsed_ms += 1;
+            }
+            previous = current;
+        }
     }
 }
 
@@ -879,4 +923,72 @@ pub fn aerodynamic() {
     speaker.play(1108, 122);
     speaker.play(880, 122);
     speaker.off();
+}
+
+/// Plays beginning of the GDR anthem using the PC speaker.
+pub fn ddr() {
+    let mut speaker = SPEAKER.lock();
+    speaker.play(A1, 1000);
+    speaker.play(A1, 1000);
+    speaker.play(G1, 1000);
+    speaker.play(F1, 1000);
+
+    speaker.play(A1X, 1000);
+    speaker.play(A1X, 1000);
+    speaker.play(A1, 1000);
+    speaker.play(G1, 1000);
+
+    speaker.play(C2, 1000);
+    speaker.play(A1, 1000);
+    speaker.play(F1, 1000);
+    speaker.play(C2, 1000);
+
+    speaker.play(C2, 1500);
+    speaker.play(D2, 500);
+    speaker.play(A1X, 1000);
+    speaker.off();
+}
+
+/// Plays the main riff of "The Sisters of Mercy - Temple of Love" using the PC speaker.
+pub fn sisters() {
+    let mut speaker = SPEAKER.lock();
+    let duration: usize = 200;
+    for _ in 0..5 {
+        speaker.play(E1, duration);
+        speaker.play(E1, duration);
+        speaker.play(B1, duration);
+        speaker.play(B1, duration);
+        speaker.play(E2, duration);
+        speaker.play(E2, duration);
+        speaker.play(B1, duration);
+        speaker.play(B1, duration);
+
+        speaker.play(D1, duration);
+        speaker.play(D1, duration);
+        speaker.play(A1, duration);
+        speaker.play(A1, duration);
+        speaker.play(D2, duration);
+        speaker.play(D2, duration);
+        speaker.play(A1, duration);
+        speaker.play(A1, duration);
+
+        speaker.play(A0, duration);
+        speaker.play(A0, duration);
+        speaker.play(E1, duration);
+        speaker.play(E1, duration);
+        speaker.play(A1, duration);
+        speaker.play(A1, duration);
+        speaker.play(B1, duration);
+        speaker.play(B1, duration);
+
+        speaker.play(C2, duration);
+        speaker.play(C2, duration);
+        speaker.play(B1, duration);
+        speaker.play(B1, duration);
+        speaker.play(A1, duration);
+        speaker.play(A1, duration);
+        speaker.play(B1, duration);
+        speaker.play(B1, duration);
+
+    }
 }
