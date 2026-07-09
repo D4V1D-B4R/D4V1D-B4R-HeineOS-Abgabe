@@ -1,3 +1,5 @@
+use core::cmp::max;
+
 /*
  * Driver for a linear framebuffer in 32-bit RGB format.
  *
@@ -6,6 +8,7 @@
  * License: GPLv3
  */
 use crate::device::font_8x8;
+use crate::library::bitmap::Bitmap;
 use crate::multiboot;
 
 /// Represents a linear framebuffer for graphics output.
@@ -200,6 +203,16 @@ impl Framebuffer {
             bmp_height
         };
 
-        todo!("framebuffer::draw_bitmap() is not yet implemented");
+        //todo!("framebuffer::draw_bitmap() is not yet implemented");
+        let buffer = self.address as *mut u8;
+        let pixels = bitmap.pixel_data();
+        let mut px = 0;
+
+        for i in (y..(y + target_height - 1 )).rev() {
+            for j in x..(x + target_width - 1 ) {
+                unsafe { self.draw_pixel_unchecked(j, i, pixels[px]) };
+                px += 1;
+            }
+        }
     }
 }

@@ -22,13 +22,18 @@
 use core::arch::asm;
 use core::str::FromStr;
 
+use alloc::vec;
 use log::{LevelFilter, debug, error, info};
+use tar_no_std::TarArchiveRef;
 use uefi::mem::memory_map::MemoryMapOwned;
 use crate::allocator::global;
 use crate::device::framebuffer::{self, Framebuffer};
 use crate::device::{cpu, keyboard, pic, pit};
 use crate::device::serial::COM1;
 use crate::device::terminal::{self, framebuffer, terminal};
+use crate::filesystem::tarfs::{self, filesystem};
+use crate::library::bitmap::Bitmap;
+use crate::library::random::{self, Random};
 use crate::logger::Logger;
 use crate::interrupt::idt;
 
@@ -45,6 +50,7 @@ mod consts;
 mod interrupt;
 mod thread;
 mod coroutine;
+mod filesystem;
 
 unsafe extern "C" {
     fn load_gdt();
@@ -112,6 +118,14 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     /////////////////////////// SECTION FOR KERNEL OPTIONS///////////////////////////
     
     //Logger::enable_terminal_logging(&LOGGER, true);
+
+    if let Some(mod_tag) = multiboot.find_tag::<multiboot::ModuleTag>(multiboot::TagType::Module) {
+        let tar_arc = TarArchiveRef::new(mod_tag.as_slice()).unwrap();
+        tarfs::init_filesystem(tar_arc);
+    }
+    else {
+        panic!("No ModuleTag could be found!");
+    }
     
     if let Some(cmdline) = multiboot.find_tag::<multiboot::CommandLineTag>(multiboot::TagType::CommandLine) {
         let command_line = cmdline.as_str();
@@ -124,7 +138,7 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
 
-    //demo::lesson1::text_demo();
+    demo::lesson1::text_demo();
     //demo::lesson1::keyboard_demo();
 
     //terminal().lock().clear();
@@ -135,9 +149,24 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     //demo::lesson4::coroutine_demo();
     //terminal().lock().clear();
-    demo::lesson4::thread_demo();
+    //demo::lesson4::thread_demo();
 
     //demo::lesson2::piano_demo();
+
+    //demo::random_demo::random_with_limit_demo(5, random::DEFAULT_SEED_1, 100000, 5);
+    //demo::random_demo::random_with_range_demo(5, 10, random::DEFAULT_SEED_1, 100000, 5);
+    //demo::random_demo::random_with_limit_demo(54, random::DEFAULT_SEED_1, 1000000, 3);
+
+    /*let my_handle = filesystem().open("/2048-license.txt").unwrap();
+    //filesystem().seek(my_handle, 430, tarfs::SeekMode::Start);
+    const BUFF_SIZE: usize = 1024;
+    let my_buff: &mut [u8; BUFF_SIZE] = &mut [0; BUFF_SIZE];
+    let bytes = filesystem().read(my_handle, my_buff);
+    let my_str = str::from_utf8(my_buff).unwrap();
+    println!("READ THIS ({:?}): \"{}\"", bytes, my_str);*/
+
+    let bitmap = Bitmap::read_from_file("/heine.bmp").unwrap().unwrap();
+    terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 150, 100);
 
     // Endless loop, as we cannot return from main().
     loop {}

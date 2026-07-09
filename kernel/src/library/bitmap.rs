@@ -7,6 +7,7 @@
 
 use alloc::vec;
 use alloc::vec::Vec;
+use log::info;
 use crate::filesystem::tarfs::{filesystem, FsError};
 use crate::library::bitmap::Compression::BitFields;
 
@@ -101,7 +102,47 @@ impl Bitmap {
             &*(header_slice.as_ptr() as *const BitmapFileHeader)
         };
 
-        todo!("Bitmap::from_bytes() is not yet implemented");
+        //todo!("Bitmap::from_bytes() is not yet implemented");
+        let bmfh = BitmapFileHeader {
+            signature: header.signature,
+            file_size: header.file_size,
+            reserved: header.reserved,
+            data_offset: header.data_offset,
+            info_header: header.info_header,
+        };
+        let bmfh_ih = bmfh.info_header;
+        let compression = bmfh_ih.compression;
+
+        if bmfh.signature[0] != 0x42 || bmfh.signature[1] != 0x4D ||
+            bmfh_ih.header_size != 40 ||
+            bmfh_ih.color_planes != 1 ||
+            bmfh_ih.bits_per_pixel != 24 ||
+            (compression != Compression::None && compression != Compression::BitFields)
+        {
+            return None;
+        }
+   
+        let ofset = bmfh.data_offset as usize;
+        let slice = &data[ofset..data.len() - 1];
+
+        let row_size = ((bmfh_ih.bits_per_pixel as i32 * bmfh_ih.width as i32)/32 + 1) * 4;
+        let bytes_per_pixel = (bmfh_ih.bits_per_pixel / 8) as i32;
+        let padding = row_size - bmfh_ih.width * bytes_per_pixel;
+
+        info!("r {} p {} b {}", row_size, padding, bytes_per_pixel);
+
+        let mut pd = Vec::new();
+        for y in 0..bmfh_ih.height {
+            let row_start = y * row_size; 
+            for x in 0..(bmfh_ih.width - padding){
+                //index = zeilenbeginn + x * bytes (3)
+                let i = (row_start + x * bytes_per_pixel) as usize;
+                let coleur = color(slice[i+2], slice[i+1], slice[i], 255);
+                pd.push(coleur);
+            }
+        }
+
+        Some(Bitmap{header: bmfh, pixel_data: pd})
     }
 
     /// Get the width of the bitmap in pixels.
