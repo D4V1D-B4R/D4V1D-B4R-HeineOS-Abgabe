@@ -12,6 +12,7 @@ use core::ops::DerefMut;
 use crate::device::{font_8x8, framebuffer};
 use crate::device::framebuffer::Framebuffer;
 use crate::library::once::Once;
+use crate::library::random::{self, Random};
 use crate::library::spinlock::Spinlock;
 
 /// Global terminal instance protected by a spinlock.
@@ -68,8 +69,8 @@ impl Terminal {
     /// Create a new Terminal instance with the given framebuffer.
     /// The terminal calculates its size based on the framebuffer dimensions and the font size.
     pub fn new(mut framebuffer: Framebuffer) -> Terminal {
-        let cols = framebuffer.width / font_8x8::CHAR_WIDTH;
-        let rows = framebuffer.height / font_8x8::CHAR_HEIGHT;
+        let cols = framebuffer.width / framebuffer::CHAR_WIDTH;
+        let rows = framebuffer.height / framebuffer::CHAR_HEIGHT;
 
         framebuffer.clear();
 
@@ -103,7 +104,7 @@ impl Terminal {
 
     /// Clear the terminal screen and reset the cursor position to the top-left corner.
     pub fn clear(&mut self) {
-        self.framebuffer.lock().scroll_up(self.pos.1 / font_8x8::CHAR_HEIGHT);
+        self.framebuffer.lock().scroll_up(self.pos.1 / framebuffer::CHAR_HEIGHT);
         self.pos = (0,0);
     }
 
@@ -111,7 +112,23 @@ impl Terminal {
     /// A newline character moves the cursor to the beginning of the next line.
     /// If the cursor reaches the end of the terminal, the screen scrolls up.
     pub fn put_char(&mut self, c: char) {
-        self.put_char_colored(c, DEFAULT_FG_COLOR, DEFAULT_BG_COLOR);
+        //self.put_char_colored(c, DEFAULT_FG_COLOR, DEFAULT_BG_COLOR);
+        self.put_char_colored(c, Self::random_color(), DEFAULT_BG_COLOR);
+    }
+
+    pub fn random_color() -> u32 {
+        let mut rng = Random::new(random::DEFAULT_SEED_1);
+        let r = rng.random_limited(7);
+        match r {
+            0 => framebuffer::BLUE,
+            1 => framebuffer::BROWN,
+            2 => framebuffer::CYAN,
+            3 => framebuffer::GREEN,
+            4 => framebuffer::MAGENTA,
+            5 => framebuffer::RED,
+            6 => framebuffer::WHITE,
+            _ => framebuffer::YELLOW,
+        }
     }
 
     /// Draw a colored character at the current cursor position and advance the cursor.
@@ -122,24 +139,24 @@ impl Terminal {
         //newline
         if c == '\n' {
             self.pos.0 = 0;
-            self.pos.1 += font_8x8::CHAR_HEIGHT;
+            self.pos.1 += framebuffer::CHAR_HEIGHT;
         }
         //put char
         else {
             self.framebuffer.lock().draw_char(c, self.pos.0, self.pos.1, fg_color, bg_color);
-            self.pos.0 += font_8x8::CHAR_WIDTH;
+            self.pos.0 += framebuffer::CHAR_WIDTH;
         }
 
         //end of line
         if self.pos.0 >= self.framebuffer.lock().width() {
             self.pos.0 = 0;
-            self.pos.1 += font_8x8::CHAR_HEIGHT;
+            self.pos.1 += framebuffer::CHAR_HEIGHT;
         }
 
         //end of terminal
-        if self.pos.1 >= self.framebuffer.lock().height() {
+        if self.pos.1 >= self.framebuffer.lock().height() - 8 {
             self.framebuffer.lock().scroll_up(1);
-            self.pos.1 -= font_8x8::CHAR_HEIGHT;
+            self.pos.1 -= framebuffer::CHAR_HEIGHT;
         }
         Terminal::draw_cursor(self.pos, self.framebuffer.lock().deref_mut());
     }

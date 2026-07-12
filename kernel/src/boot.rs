@@ -139,8 +139,8 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
 
-    //demo::lesson1::text_demo();
-    //demo::lesson1::keyboard_demo();
+    demo::lesson1::text_demo();
+    demo::lesson1::keyboard_demo();
 
     //terminal().lock().clear();
     //demo::lesson1::keyboard_demo();
