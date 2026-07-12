@@ -8,6 +8,7 @@
 #![no_std]
 #![feature(abi_x86_interrupt)]
 #![feature(unsafe_cell_access)]
+#![feature(c_size_t)]
 
 // Silence compiler warnings.
 // This is done to avoid overwhelming compiler output when building the OS at the beginning.
@@ -138,7 +139,7 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
 
-    demo::lesson1::text_demo();
+    //demo::lesson1::text_demo();
     //demo::lesson1::keyboard_demo();
 
     //terminal().lock().clear();
@@ -157,16 +158,18 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     //demo::random_demo::random_with_range_demo(5, 10, random::DEFAULT_SEED_1, 100000, 5);
     //demo::random_demo::random_with_limit_demo(54, random::DEFAULT_SEED_1, 1000000, 3);
 
-    /*let my_handle = filesystem().open("/2048-license.txt").unwrap();
+    let my_handle = filesystem().open("/roms/2048-license.txt").unwrap();
     //filesystem().seek(my_handle, 430, tarfs::SeekMode::Start);
     const BUFF_SIZE: usize = 1024;
     let my_buff: &mut [u8; BUFF_SIZE] = &mut [0; BUFF_SIZE];
     let bytes = filesystem().read(my_handle, my_buff);
     let my_str = str::from_utf8(my_buff).unwrap();
-    println!("READ THIS ({:?}): \"{}\"", bytes, my_str);*/
+    println!("READ THIS ({:?}): \"{}\"", bytes, my_str);
 
     let bitmap = Bitmap::read_from_file("/heine.bmp").unwrap().unwrap();
     terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 150, 100);
+
+    demo::lesson6::peanut_gb::play("/roms/2048.gb");
 
     // Endless loop, as we cannot return from main().
     loop {}

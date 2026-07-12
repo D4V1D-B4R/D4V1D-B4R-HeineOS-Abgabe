@@ -8,8 +8,8 @@
 
 use alloc::vec::Vec;
 use core::ffi::{c_char, c_int, c_size_t, c_void, CStr};
-use log::error;
-use crate::library::once::Once;
+use log::{error, info};
+use crate::{device::terminal::framebuffer, filesystem::tarfs::filesystem, library::once::Once};
 
 unsafe extern "C" {
     /// Get the size of the `gb_s` structure (implemented in `peanut-gb.c`).
@@ -145,7 +145,8 @@ static ROM: Once<Vec<u8>> = Once::new();
 /// This is a callback function for the PeanutGB emulator.
 unsafe extern "C" fn gb_rom_read(_gb: *mut c_void, addr: u32) -> u8 {
     // TODO: Read a byte from the ROM file.
-    0
+    info!("ROM read at {:#x}", addr);
+    ROM.get().unwrap()[addr as usize]
 }
 
 /// Read a byte from the save RAM at the offset specified by `addr`.
@@ -182,5 +183,32 @@ unsafe extern "C" fn gb_error(_gb: *mut c_void, error: c_int, addr: u16) {
 
 /// Play the given ROM file using the Peanut-GB emulator.
 pub fn play(rom_path: &str) {
-    todo!("peanut-gb demo is not yet implemented");
+    //todo!("peanut-gb demo is not yet implemented");
+
+    let my_handle = filesystem().open(rom_path).unwrap();
+
+    let rom_size = filesystem().size(my_handle).unwrap();
+    ROM.init(|| {
+        let mut my_buff = Vec::<u8>::with_capacity(rom_size); 
+        filesystem().read(my_handle, &mut my_buff);
+        my_buff
+        }
+    );
+
+    let mut gbs = Vec::<u8>::with_capacity( unsafe { gb_size() } as usize );
+    let gbs_ptr = gbs.as_mut_ptr() as *mut c_void;
+
+    unsafe { gb_init(gbs_ptr, 
+        gb_rom_read, 
+        gb_cart_ram_read, 
+        gb_cart_ram_write, 
+        gb_error, 
+        core::ptr::null()) 
+    };
+
+    //unsafe { gb_init_lcd(gbs_ptr, lcd_draw_line(gbs_ptr, 0, 0)};
+
+    loop {
+        unsafe { gb_run_frame(gbs_ptr) };
+    }
 }
