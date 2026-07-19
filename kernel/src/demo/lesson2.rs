@@ -8,6 +8,7 @@
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use log::info;
 use crate::allocator;
 use crate::device::key::Scancode;
 use crate::device::keyboard::keyboard_buffer;
@@ -53,48 +54,96 @@ pub fn speaker_demo() {
 }
 
 pub fn piano_demo() {
-    println!("Piano Demo:");
-    println!("Press keys on your keyboard. Press 'Esc' to exit the demo.\n");
     let key_buffer = keyboard_buffer();
+    let mut is_played = false;
+    let speaker = &SPEAKER;
+
+    println!("Piano Demo:");
+    println!("Press keys on your keyboard. Press 'Esc' to exit the demo. Below you see the keyboard layout:\n");
+    println!("      W E   T Z U   O P");
+    println!("     A S D F G H J K L\n");
 
     loop {
-        let key_event = key_buffer.pop_key_event();
-        let speaker = &SPEAKER;
-        println!("{:?}", key_buffer.poll_key_event());
-        if key_event.is_some() {
-            match key_event.unwrap().scancode() {
+        let key_event = key_buffer.poll_key_event();
+        if key_event.pressed() && !is_played{
+            match key_event.scancode() {
                 Some(Scancode::A) => {
-                    speaker.lock().play(C1, 10);
+                    speaker.lock().play_long(C1);
+                    is_played = true;
+                }
+                Some(Scancode::W) => {
+                    speaker.lock().play_long(C1X);
+                    is_played = true;
                 }
                 Some(Scancode::S) => {
-                    speaker.lock().play(D1, 10);
+                    speaker.lock().play_long(D1);
+                    is_played = true;
+                }
+                Some(Scancode::E) => {
+                    speaker.lock().play_long(D1X);
+                    is_played = true;
                 }
                 Some(Scancode::D) => {
-                    speaker.lock().play(E1, 10);
+                    speaker.lock().play_long(E1);
+                    is_played = true;
                 }
                 Some(Scancode::F) => {
-                    speaker.lock().play(F1, 10);
+                    speaker.lock().play_long(F1);
+                    is_played = true;
+                }
+                Some(Scancode::T) => {
+                    speaker.lock().play_long(F1X);
+                    is_played = true;
                 }
                 Some(Scancode::G) => {
-                    speaker.lock().play(G1, 10);
+                    speaker.lock().play_long(G1);
+                    is_played = true;
+                }
+                 Some(Scancode::Z) => {
+                    speaker.lock().play_long(G1X);
+                    is_played = true;
                 }
                 Some(Scancode::H) => {
-                    speaker.lock().play(A1, 10);
+                    speaker.lock().play_long(A1);
+                    is_played = true;
+                }
+                Some(Scancode::U) => {
+                    speaker.lock().play_long(A1X);
+                    is_played = true;
                 }
                 Some(Scancode::J) => {
-                    speaker.lock().play(B1, 10);
+                    speaker.lock().play_long(B1);
+                    is_played = true;
+                }
+                Some(Scancode::K) => {
+                    speaker.lock().play_long(C2);
+                    is_played = true;
+                }
+                Some(Scancode::O) => {
+                    speaker.lock().play_long(C2X);
+                    is_played = true;
+                }
+                Some(Scancode::L) => {
+                    speaker.lock().play_long(D2);
+                    is_played = true;
+                }
+                Some(Scancode::P) => {
+                    speaker.lock().play_long(D2X);
+                    is_played = true;
                 }
                 Some(Scancode::Escape) => {
                     speaker.lock().off();
-                    return;
+                    break;
                 }
                 _ => {
                     speaker.lock().off();
+                    is_played = false;
                 }
             }
         }
-        else {
+        else if !key_event.pressed(){
             speaker.lock().off();
+            is_played = false;
         }
     }
     println!("Finished :)");

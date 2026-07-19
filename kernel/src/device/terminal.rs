@@ -9,8 +9,10 @@
 use core::fmt;
 use core::fmt::Write;
 use core::ops::DerefMut;
+use log::info;
+
 use crate::device::{font_8x8, framebuffer};
-use crate::device::framebuffer::Framebuffer;
+use crate::device::framebuffer::{CHAR_HEIGHT, CHAR_WIDTH, Framebuffer};
 use crate::library::once::Once;
 use crate::library::random::{self, Random};
 use crate::library::spinlock::Spinlock;
@@ -97,8 +99,18 @@ impl Terminal {
     /// Set the cursor position to the given position.
     /// If the position is out of bounds, it is clamped to the terminal size.
     pub fn set_pos(&mut self, col: usize, row: usize) {
+        let mut new_pos = (col, row);
+        let max_width = framebuffer().lock().width - CHAR_WIDTH;
+        let max_height = framebuffer().lock().height - CHAR_HEIGHT;
+        if col > max_width {
+            new_pos.0 = max_width;
+        }
+        if row > max_height {
+            new_pos.1 = max_height;
+        }
+
         Terminal::clear_cursor(self.pos, self.framebuffer.lock().deref_mut());
-        self.pos = (col, row);
+        self.pos = new_pos;
         Terminal::draw_cursor(self.pos, self.framebuffer.lock().deref_mut());
     }
 
@@ -112,8 +124,8 @@ impl Terminal {
     /// A newline character moves the cursor to the beginning of the next line.
     /// If the cursor reaches the end of the terminal, the screen scrolls up.
     pub fn put_char(&mut self, c: char) {
-        //self.put_char_colored(c, DEFAULT_FG_COLOR, DEFAULT_BG_COLOR);
-        self.put_char_colored(c, Self::random_color(), DEFAULT_BG_COLOR);
+        self.put_char_colored(c, DEFAULT_FG_COLOR, DEFAULT_BG_COLOR);
+        //self.put_char_colored(c, Self::random_color(), DEFAULT_BG_COLOR);
     }
 
     pub fn random_color() -> u32 {

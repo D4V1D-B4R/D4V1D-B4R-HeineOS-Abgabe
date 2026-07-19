@@ -445,7 +445,7 @@ impl ISR for KeyboardISR {
     /// Keyboard interrupt handler.
     /// This function reads the next byte from the keyboard and decodes it into a key event.
     fn trigger(&self) {
-        log::info!("trigger() KeyboardISR called");
+        //log::info!("trigger() KeyboardISR called");
 
         let key_event = KEYBOARD.lock().try_read_next_byte();
         //let status = (unsafe { KEYBOARD.lock().control_port.inb() } & KeyboardStatus::AUXILIARY_DEVICE);

@@ -114,7 +114,7 @@ impl Bitmap {
         let compression = bmfh_ih.compression;
 
         if bmfh.signature[0] != 0x42 || bmfh.signature[1] != 0x4D ||
-            bmfh_ih.header_size != 40 ||
+            //bmfh_ih.header_size != 40 ||
             bmfh_ih.color_planes != 1 ||
             bmfh_ih.bits_per_pixel != 24 ||
             (compression != Compression::None && compression != Compression::BitFields)
@@ -123,25 +123,29 @@ impl Bitmap {
         }
    
         let ofset = bmfh.data_offset as usize;
-        let slice = &data[ofset..data.len() - 1];
+        let slice = &data[ofset..data.len()];
 
-        let row_size = ((bmfh_ih.bits_per_pixel as i32 * bmfh_ih.width as i32)/32 + 1) * 4;
-        let bytes_per_pixel = (bmfh_ih.bits_per_pixel / 8) as i32;
-        let padding = row_size - bmfh_ih.width * bytes_per_pixel;
-
-        info!("r {} p {} b {}", row_size, padding, bytes_per_pixel);
+        let bytes_per_pixel = 3;//(bmfh_ih.bits_per_pixel / 8) as i32;
+        //let row_size = ((bmfh_ih.bits_per_pixel as i32 * bmfh_ih.width as i32)/32 + 1) * 4;        
+        //let padding = row_size - bmfh_ih.width * bytes_per_pixel;
+        let row_size = (bmfh_ih.width * bytes_per_pixel + 3) &! 3; //KI-Müll
 
         let mut pd = Vec::new();
+
         for y in 0..bmfh_ih.height {
+
             let row_start = y * row_size; 
-            for x in 0..(bmfh_ih.width - padding){
+            //let row_start = (bmfh_ih.height -1 - y) * row_size;
+
+            for x in 0..(bmfh_ih.width - 1) {
+
                 //index = zeilenbeginn + x * bytes (3)
                 let i = (row_start + x * bytes_per_pixel) as usize;
                 let coleur = color(slice[i+2], slice[i+1], slice[i], 255);
                 pd.push(coleur);
             }
         }
-
+        info!("Finished reading Bitmap with size w{} x h{}.", bmfh_ih.width as usize, bmfh_ih.height as usize);
         Some(Bitmap{header: bmfh, pixel_data: pd})
     }
 

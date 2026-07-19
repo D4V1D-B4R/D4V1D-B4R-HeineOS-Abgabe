@@ -7,6 +7,7 @@ use core::cmp::max;
  *         Fabian Ruhland, Heinrich Heine University Duesseldorf, 2026-01-07
  * License: GPLv3
  */
+#[cfg(not(feature = "unifont"))]
 use crate::device::font_8x8;
 use crate::device::terminal::framebuffer;
 use crate::library::bitmap::Bitmap;
@@ -33,8 +34,15 @@ pub const fn color(red: u8, green: u8, blue: u8) -> u32 {
     ((red as u32) << 16) | ((green as u32) << 8) | (blue as u32)
 }
 
+#[cfg(feature = "unifont")]
 pub const CHAR_WIDTH: usize = 8;
+#[cfg(not(feature = "unifont"))]
+pub const CHAR_WIDTH: usize = font_8x8::CHAR_WIDTH;
+
+#[cfg(feature = "unifont")]
 pub const CHAR_HEIGHT: usize = 16;
+#[cfg(not(feature = "unifont"))]
+pub const CHAR_HEIGHT: usize = font_8x8::CHAR_HEIGHT;
 
 // ANSI colors
 pub const BLACK: u32 = color(0, 0, 0);
@@ -114,6 +122,7 @@ impl Framebuffer {
     }
 
     /// Get the pixel data for a character from the font data.
+    #[cfg(not(feature = "unifont"))]
     fn get_char_pixels(c: char) -> &'static [u8] {
         let char_mem_size = (CHAR_WIDTH + (8 >> 1)) / 8 * CHAR_HEIGHT;
         let start = char_mem_size * c as usize;
@@ -124,8 +133,9 @@ impl Framebuffer {
 
     /// Draw a single character at the specified (x, y) coordinates with the given foreground and background colors.
     /// If the character does not fit fully within the framebuffer, it is not drawn.
+    #[cfg(not(feature = "unifont"))]
     pub fn draw_char(&mut self, c: char, x: usize, y: usize, fg_color: u32, bg_color: u32) {
-        /*let char_width  = font_8x8::CHAR_WIDTH;
+        let char_width  = font_8x8::CHAR_WIDTH;
         let char_height = font_8x8::CHAR_HEIGHT;
         if x + char_width > self.width || y + char_height > self.height {
             return;
@@ -154,19 +164,23 @@ impl Framebuffer {
             }
 
             pixel_index += 1;
-        }*/
+        }
+    }
+
+    /// New draw_char function for unifont chars.
+    #[cfg(feature = "unifont")]
+    pub fn draw_char(&mut self, c: char, x: usize, y: usize, fg_color: u32, bg_color: u32) {
         let glyph = unifont::get_glyph(c).unwrap();
         for i in 0..CHAR_WIDTH {
             for j in 0..CHAR_HEIGHT {
                 if glyph.get_pixel(i, j) {
-                    unsafe { self.draw_pixel_unchecked(x+i, y+j, fg_color) };
+                    unsafe { self.draw_pixel_unchecked(x + i, y + j, fg_color) };
                 }
                 else {
-                    unsafe { self.draw_pixel_unchecked(x+i, y+j, bg_color) };
+                    unsafe { self.draw_pixel_unchecked(x + i, y + j, bg_color) };
                 }
             }
         }
-
     }
 
     /// Draw a string at the specified (x, y) coordinates with the given foreground and background colors.

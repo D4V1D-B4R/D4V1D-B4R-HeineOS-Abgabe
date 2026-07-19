@@ -9,7 +9,7 @@
 use alloc::vec::Vec;
 use core::ffi::{c_char, c_int, c_size_t, c_void, CStr};
 use log::{error, info};
-use crate::{device::terminal::framebuffer, filesystem::tarfs::filesystem, library::once::Once};
+use crate::{device::{key::{KeyEventQueue, Scancode}, keyboard::{self, keyboard_buffer}, terminal::framebuffer}, filesystem::tarfs::filesystem, library::once::Once};
 
 unsafe extern "C" {
     /// Get the size of the `gb_s` structure (implemented in `peanut-gb.c`).
@@ -145,7 +145,7 @@ static ROM: Once<Vec<u8>> = Once::new();
 /// This is a callback function for the PeanutGB emulator.
 unsafe extern "C" fn gb_rom_read(_gb: *mut c_void, addr: u32) -> u8 {
     // TODO: Read a byte from the ROM file.
-    info!("ROM read at {:#x}", addr);
+    //info!("ROM read at {:#x}", addr);
     ROM.get().unwrap()[addr as usize]
 }
 
@@ -172,6 +172,15 @@ unsafe extern "C" fn gb_cart_ram_write(_gb: *mut c_void, addr: u32, val: u8) {
 /// The other bits are used for Game Boy Color emulation, but are ignored in this implementation.
 unsafe extern "C" fn lcd_draw_line(_gb: *mut c_void, pixels: *const u8, line: u8) {
     // TODO: Render the line to the framebuffer
+    let data: &[u8] = unsafe {
+        core::slice::from_raw_parts(pixels, 160)
+    };
+    let mut x = 0;
+    for byte in data {
+        let bits = (byte & 0b11) as usize;
+        unsafe { framebuffer().lock().draw_pixel_unchecked(x, line as usize, PALETTE[bits]) };
+        x += 1;
+    }
 }
 
 /// Handle emulation errors.
@@ -183,19 +192,21 @@ unsafe extern "C" fn gb_error(_gb: *mut c_void, error: c_int, addr: u16) {
 
 /// Play the given ROM file using the Peanut-GB emulator.
 pub fn play(rom_path: &str) {
-    //todo!("peanut-gb demo is not yet implemented");
-
+    //todo!("peanut-gb demo is not yet implemented")
     let my_handle = filesystem().open(rom_path).unwrap();
+    let key_ev_q = keyboard_buffer();
 
     let rom_size = filesystem().size(my_handle).unwrap();
     ROM.init(|| {
-        let mut my_buff = Vec::<u8>::with_capacity(rom_size); 
+        let mut my_buff = Vec::<u8>::with_capacity(rom_size);
+        my_buff.resize(rom_size, 0);
         filesystem().read(my_handle, &mut my_buff);
         my_buff
         }
     );
 
     let mut gbs = Vec::<u8>::with_capacity( unsafe { gb_size() } as usize );
+    unsafe { gbs.set_len( gb_size() as usize); }
     let gbs_ptr = gbs.as_mut_ptr() as *mut c_void;
 
     unsafe { gb_init(gbs_ptr, 
@@ -206,9 +217,50 @@ pub fn play(rom_path: &str) {
         core::ptr::null()) 
     };
 
-    //unsafe { gb_init_lcd(gbs_ptr, lcd_draw_line(gbs_ptr, 0, 0)};
+    unsafe { gb_init_lcd(gbs_ptr, lcd_draw_line as *const c_void) };
 
     loop {
-        unsafe { gb_run_frame(gbs_ptr) };
+        unsafe { gb_run_frame(gbs_ptr); }
+
+        if let Some(key_event) = key_ev_q.pop_key_event() {
+            let joy_state = unsafe { gb_get_joypad_ptr(gbs_ptr) };
+            unsafe {
+                match key_event.scancode() {
+                    Some(Scancode::Up) => {
+                        *joy_state ^= JoypadButton::Up as u8;
+                        info!("UP");
+                    },
+                    Some(Scancode::Down) => {
+                        *joy_state ^= JoypadButton::Down as u8;
+                        info!("DOWN");
+                    },
+                    Some(Scancode::Left) => {
+                        *joy_state ^= JoypadButton::Left as u8;
+                        info!("LEFT");
+                    },
+                    Some(Scancode::Right) => {
+                        *joy_state ^= JoypadButton::Right as u8;
+                        info!("RIGHT");
+                    },
+                    Some(Scancode::A) => {
+                        *joy_state ^= JoypadButton::A as u8;
+                        info!("A");
+                    },
+                    Some(Scancode::B) => {
+                        *joy_state ^= JoypadButton::B as u8;
+                        info!("B");
+                    },
+                    Some(Scancode::Space) => {//select
+                        *joy_state ^= JoypadButton::Select as u8;
+                        info!("SPACE");
+                    },
+                    Some(Scancode::Enter) => {//start
+                        *joy_state ^= JoypadButton::Start as u8;
+                        info!("ENTER");
+                    },
+                    _ => {},
+                }
+            }
+        }
     }
 }

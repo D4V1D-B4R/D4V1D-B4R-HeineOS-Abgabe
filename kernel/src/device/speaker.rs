@@ -98,9 +98,21 @@ impl Speaker {
         unsafe { self.pit_data2_port.outb((counter >> 0x8) as u8) };
 
         self.on();
-        //self.delay(duration);
-        //pit::wait(duration);
-        //self.off();
+        self.delay(duration);
+        pit::wait(duration);
+        self.off();
+    }
+
+    /// Play a note indefinetyl until manually turned off with off()
+    pub fn play_long(&mut self, frequency: usize) {
+        let counter = PIT_FREQUENCY / frequency;
+
+        //0xB6 = 10 11 011 0 [Channel 2 | First low, then high counter | OP-Mode 3 | Binary Counter]
+        unsafe { self.pit_ctrl_port.outb(0xB6) };
+        unsafe { self.pit_data2_port.outb((counter & 0xFF) as u8) };
+        unsafe { self.pit_data2_port.outb((counter >> 0x8) as u8) };
+
+        self.on();
     }
 
     /// Turn on the speaker.

@@ -23,12 +23,15 @@
 use core::arch::asm;
 use core::str::FromStr;
 
-use alloc::vec;
+use alloc::string::String;
+use alloc::vec::{self, Vec};
 use log::{LevelFilter, debug, error, info};
 use tar_no_std::TarArchiveRef;
 use uefi::mem::memory_map::MemoryMapOwned;
 use crate::allocator::global;
+use crate::demo::typing_demo;
 use crate::device::framebuffer::{self, Framebuffer};
+use crate::device::key::Scancode;
 use crate::device::{cpu, keyboard, pic, pit};
 use crate::device::serial::COM1;
 use crate::device::terminal::{self, framebuffer, terminal};
@@ -52,6 +55,8 @@ mod interrupt;
 mod thread;
 mod coroutine;
 mod filesystem;
+mod videopoker;
+mod sheldon;
 
 unsafe extern "C" {
     fn load_gdt();
@@ -138,38 +143,56 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     }
 
     /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
+    
+    // Startup fun
+    let fb = terminal::framebuffer();
+    let bitmap = Bitmap::read_from_file("heinered.bmp").unwrap().unwrap();
+    let yffsilon = 150;
+    terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 258, yffsilon);
+    fb.lock().draw_str("HeineOS Vers. 0.1.0", 296, yffsilon + 253, framebuffer::RED, framebuffer::BLACK);
+    fb.lock().draw_str("(C) 1984 Heinrich Heine University, Duesseldorf Germany", 160, yffsilon + 280, framebuffer::RED, framebuffer::BLACK);
+    
 
-    demo::lesson1::text_demo();
-    demo::lesson1::keyboard_demo();
+    let w = fb.lock().width();
+    let h = fb.lock().height();
+    println!(">> Initilasiized screen with size w{} x h{}.", w, h);
+    println!(">> Starting sheldon shell...");
+    pit::wait(3000);
+    terminal().lock().clear();
 
-    //terminal().lock().clear();
+    sheldon::shell::shell();
+
+    // Lessons
+    //demo::lesson1::text_demo();
     //demo::lesson1::keyboard_demo();
-
+    //demo::lesson1::keyboard_demo();
     //demo::lesson2::heap_demo();
     //demo::lesson2::speaker_demo();
-
     //demo::lesson4::coroutine_demo();
-    //terminal().lock().clear();
     //demo::lesson4::thread_demo();
+    //demo::lesson6::peanut_gb::play("/roms/tetris.gb");
 
+    // My stuff
     //demo::lesson2::piano_demo();
-
     //demo::random_demo::random_with_limit_demo(5, random::DEFAULT_SEED_1, 100000, 5);
     //demo::random_demo::random_with_range_demo(5, 10, random::DEFAULT_SEED_1, 100000, 5);
     //demo::random_demo::random_with_limit_demo(54, random::DEFAULT_SEED_1, 1000000, 3);
+    //demo::typing_demo::typing_demo();
+    //videopoker::poker::play();
 
-    let my_handle = filesystem().open("/roms/2048-license.txt").unwrap();
+
+    // Testing and WIP...
+
+    /*let my_handle = filesystem().open("/roms/2048-license.txt").unwrap();
     //filesystem().seek(my_handle, 430, tarfs::SeekMode::Start);
     const BUFF_SIZE: usize = 1024;
     let my_buff: &mut [u8; BUFF_SIZE] = &mut [0; BUFF_SIZE];
     let bytes = filesystem().read(my_handle, my_buff);
     let my_str = str::from_utf8(my_buff).unwrap();
-    println!("READ THIS ({:?}): \"{}\"", bytes, my_str);
+    println!("READ THIS ({:?}): \"{}\"", bytes, my_str);*/
 
-    let bitmap = Bitmap::read_from_file("/heine.bmp").unwrap().unwrap();
-    terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 150, 100);
-
-    demo::lesson6::peanut_gb::play("/roms/2048.gb");
+    /*let bitmap = Bitmap::read_from_file("heine.bmp").unwrap().unwrap();
+    terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 0, 0);*/
 
     // Endless loop, as we cannot return from main().
     loop {}
