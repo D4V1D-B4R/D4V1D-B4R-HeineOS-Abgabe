@@ -47,10 +47,16 @@ pub fn heap_demo() {
 
 /// A demo that plays songs via the PC speaker.
 pub fn speaker_demo() {
-    //speaker::sisters();
-    //speaker::ddr();
     speaker::tetris();
     speaker::aerodynamic();
+
+    speaker::sisters();
+    speaker::ddr();
+    speaker::ode_to_joy();
+}
+
+pub fn startup_melody() {
+    speaker::ode_to_joy();
 }
 
 pub fn piano_demo() {

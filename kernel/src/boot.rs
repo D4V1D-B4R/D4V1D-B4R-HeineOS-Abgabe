@@ -143,15 +143,15 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     }
 
     /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
-    
+
     // Startup fun
     let fb = terminal::framebuffer();
     let bitmap = Bitmap::read_from_file("heinered.bmp").unwrap().unwrap();
     let yffsilon = 150;
     terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 258, yffsilon);
     fb.lock().draw_str("HeineOS Vers. 0.1.0", 296, yffsilon + 253, framebuffer::RED, framebuffer::BLACK);
-    fb.lock().draw_str("(C) 1984 Heinrich Heine University, Duesseldorf Germany", 160, yffsilon + 280, framebuffer::RED, framebuffer::BLACK);
-    
+    fb.lock().draw_str("(C) 2026 Heinrich Heine University, Duesseldorf Germany", 160, yffsilon + 280, framebuffer::RED, framebuffer::BLACK);
+    demo::lesson2::startup_melody();
 
     let w = fb.lock().width();
     let h = fb.lock().height();
@@ -182,7 +182,6 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
 
     // Testing and WIP...
-
     /*let my_handle = filesystem().open("/roms/2048-license.txt").unwrap();
     //filesystem().seek(my_handle, 430, tarfs::SeekMode::Start);
     const BUFF_SIZE: usize = 1024;
@@ -191,8 +190,7 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     let my_str = str::from_utf8(my_buff).unwrap();
     println!("READ THIS ({:?}): \"{}\"", bytes, my_str);*/
 
-    /*let bitmap = Bitmap::read_from_file("heine.bmp").unwrap().unwrap();
-    terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 0, 0);*/
+    println!("NO PROCESS RUNNING. PLEASE RESTART SYSTEM.");
 
     // Endless loop, as we cannot return from main().
     loop {}

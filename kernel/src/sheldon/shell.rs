@@ -1,7 +1,7 @@
 use core::cmp;
 use alloc::{string::{String, ToString}, vec::Vec};
 
-use crate::{demo, device::{framebuffer, key::Scancode, keyboard::keyboard_buffer, pit, terminal::{framebuffer, terminal}}, library::random, videopoker};
+use crate::{demo, device::{framebuffer, key::Scancode, keyboard::keyboard_buffer, pit, speaker::SPEAKER, terminal::{framebuffer, terminal}}, library::random, videopoker};
 
 // Length of the beginnig of the line which shall not be overwritten by the user
 const PADDING: usize = framebuffer::CHAR_WIDTH * 3;
@@ -16,10 +16,13 @@ pub fn shell() {
     let mut previous: Vec<char> = Vec::new();
     let mut allow_print_prev = true;
 
+    // Main input loop
     loop {
         let key_event = key_buffer.poll_key_event();
+
         if key_event.pressed() {
             match key_event.scancode() {
+
                 // Confirm input and process it
                 Some(Scancode::Enter) => {
                     println!("");
@@ -36,6 +39,8 @@ pub fn shell() {
                     my_buff.clear();
                     allow_print_prev = true;
                 },
+
+
                 // Delete typed in characters (from screen & buffer), without deleting the beginning of the line
                 Some(Scancode::Backspace) => {
                     my_buff.pop();
@@ -46,8 +51,11 @@ pub fn shell() {
                     terminal().lock().set_pos(col, cursor_pos.1);
                     allow_print_prev = true;
                 },
+
+
                 // Brings up the last typed in command
                 Some(Scancode::Up) => {
+                    SPEAKER.lock().play_blip();
                     my_buff = previous.clone();
                     let printable: String = my_buff.iter().collect();
                     if allow_print_prev { //TODO: implement some sort of "clear line" in terminal
@@ -57,11 +65,14 @@ pub fn shell() {
                         allow_print_prev = false;   
                     }
                 }
+
+
                 // Clears screen and quits the shell
                 Some(Scancode::Escape) => {
                     terminal().lock().clear();
                     break;
                 }
+
                 // Print the given char and add it to the buffer
                 _ => {
                     let c = key_event.ascii().unwrap_or(' ');
@@ -73,12 +84,17 @@ pub fn shell() {
             }
         }
     }
+
+    //Exit shell
+    SPEAKER.lock().play_reject();
     println!("Exiting shell...");
 }
 
-/// Processes the query and performs the correspondin action
-fn process_query(buffer: &Vec<char>) -> bool{
+/// Processes the query and performs the correspondin action.
+/// Returned bool tells wheter to print runtime after finishing or not.
+fn process_query(buffer: &Vec<char>) -> bool {
     let command: String = buffer.iter().collect();
+
     match command.as_str() {
         // Given code
         "text_demo" => { demo::lesson1::text_demo(); },
@@ -103,7 +119,9 @@ fn process_query(buffer: &Vec<char>) -> bool{
         "" => { return false; },
 
         // Unknown command
-        _ => { print!("Unknown command \"{}\". Please try again or type \"help\" to get help.\n", command.as_str()); return false;},
+        _ => {  SPEAKER.lock().play_reject();
+                print!("Unknown command \"{}\". Please try again or type \"help\" to get help.\n", command.as_str()); return false;
+        },
     }
     true
 }

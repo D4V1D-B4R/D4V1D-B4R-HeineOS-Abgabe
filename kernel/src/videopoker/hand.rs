@@ -7,16 +7,16 @@ use crate::videopoker::{card::{Card, CardValue::{self, *}}, hand::Hand::*};
 #[repr(usize)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Hand {
-    HighCard = 1,
-    JacksOrHigher = 2,
-    TwoPair = 3,
-    ThreeOfAKind = 4,
-    Straight = 5,
-    Flush = 6,
-    FullHouse = 7,
-    FourOfAKind = 8,
-    StraightFlush = 9,
-    RoyalFlush = 10,
+    HighCard = 0,
+    JacksOrHigher = 1,
+    TwoPair = 2,
+    ThreeOfAKind = 3,
+    Straight = 4,
+    Flush = 5,
+    FullHouse = 6,
+    FourOfAKind = 7,
+    StraightFlush = 8,
+    RoyalFlush = 9,
 }
 
 /// Takes a hand of 5 cards and return the highest achieved poker hand.

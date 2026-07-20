@@ -103,6 +103,23 @@ impl Speaker {
         self.off();
     }
 
+    /// Play a "confirmation" sound effect.
+    pub fn play_confirm(&mut self) {
+        self.play(E2,25);
+        self.play(G2, 50);
+    }
+
+    /// Play a "rejection" sound effect.
+    pub fn play_reject(&mut self) {
+        self.play(G2, 25);
+        self.play(D2, 50);
+    }
+
+    /// Play a very short sound.
+    pub fn play_blip(&mut self) {
+        self.play(E2,25);
+    }
+
     /// Play a note indefinetyl until manually turned off with off()
     pub fn play_long(&mut self, frequency: usize) {
         let counter = PIT_FREQUENCY / frequency;
@@ -1003,4 +1020,29 @@ pub fn sisters() {
         speaker.play(B1, duration);
 
     }
+}
+
+/// Plays beginning of "Ode an die Freude".
+pub fn ode_to_joy() { //KI Müll
+    let mut speaker = SPEAKER.lock();
+    let duration = 100;
+
+    speaker.play(330, duration);  // E4
+    speaker.play(330, duration);  // E4
+    speaker.play(349, duration);  // F4
+    speaker.play(392, duration);  // G4
+
+    speaker.play(392, duration);  // G4
+    speaker.play(349, duration);  // F4
+    speaker.play(330, duration);  // E4
+    speaker.play(294, duration);  // D4
+
+    speaker.play(262, duration);  // C4
+    speaker.play(262, duration);  // C4
+    speaker.play(294, duration);  // D4
+    speaker.play(330, duration);  // E4
+
+    speaker.play(330, duration + duration / 2);  // E4
+    speaker.play(294, duration / 2);  // D4
+    speaker.play(294, duration * 2); // D4
 }

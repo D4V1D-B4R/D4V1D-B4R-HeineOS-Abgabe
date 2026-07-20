@@ -116,7 +116,7 @@ impl Terminal {
 
     /// Clear the terminal screen and reset the cursor position to the top-left corner.
     pub fn clear(&mut self) {
-        self.framebuffer.lock().scroll_up(self.pos.1 / framebuffer::CHAR_HEIGHT);
+        self.framebuffer.lock().clear();
         self.pos = (0,0);
     }
 

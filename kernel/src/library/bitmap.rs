@@ -145,7 +145,7 @@ impl Bitmap {
                 pd.push(coleur);
             }
         }
-        info!("Finished reading Bitmap with size w{} x h{}.", bmfh_ih.width as usize, bmfh_ih.height as usize);
+        //info!("Finished reading Bitmap with size w{} x h{}.", bmfh_ih.width as usize, bmfh_ih.height as usize);
         Some(Bitmap{header: bmfh, pixel_data: pd})
     }
 
