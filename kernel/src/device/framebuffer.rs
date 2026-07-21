@@ -1,5 +1,7 @@
 use core::cmp::max;
 
+use log::info;
+
 /*
  * Driver for a linear framebuffer in 32-bit RGB format.
  *
@@ -99,6 +101,13 @@ impl Framebuffer {
     pub fn clear(&mut self) {
         let buffer = self.address as *mut u8;
         unsafe { buffer.write_bytes(0, self.pitch * self.height); }
+    }
+
+    /// Clears a single line of the framebuffer by filling it with black pixels.
+    pub fn clear_line(&mut self, line: usize) {
+        let buffer = self.address as *mut u8;
+        unsafe { buffer.add(self.pitch * line)
+            .write_bytes(0, self.pitch * CHAR_HEIGHT); }
     }
 
     /// Draw a pixel at the specified (x, y) coordinates with the given color.

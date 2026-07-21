@@ -14,7 +14,6 @@ pub fn shell() {
     
     let mut my_buff: Vec<char> = Vec::new();
     let mut previous: Vec<char> = Vec::new();
-    let mut allow_print_prev = true;
 
     // Main input loop
     loop {
@@ -37,7 +36,6 @@ pub fn shell() {
                     // Set previous buffer
                     previous = my_buff.clone();
                     my_buff.clear();
-                    allow_print_prev = true;
                 },
 
 
@@ -49,7 +47,6 @@ pub fn shell() {
                     let col = cmp::max(cursor_pos.0
                         .checked_sub(framebuffer::CHAR_WIDTH).unwrap_or(0), PADDING);
                     terminal().lock().set_pos(col, cursor_pos.1);
-                    allow_print_prev = true;
                 },
 
 
@@ -58,12 +55,19 @@ pub fn shell() {
                     SPEAKER.lock().play_blip();
                     my_buff = previous.clone();
                     let printable: String = my_buff.iter().collect();
-                    if allow_print_prev { //TODO: implement some sort of "clear line" in terminal
-                        let row = terminal().lock().pos().1;
-                        terminal().lock().set_pos(PADDING,row);
-                        print!("{}", printable);
-                        allow_print_prev = false;   
-                    }
+                    let row = terminal().lock().pos().1;
+                    framebuffer().lock().clear_line(row);
+                    terminal().lock().set_pos(0, row);
+                    print!(">> {}", printable);
+                }
+
+                // Clears the line and input
+                Some(Scancode::Down) => {
+                    my_buff.clear();
+                    let row = terminal().lock().pos().1;
+                    framebuffer().lock().clear_line(row);
+                    terminal().lock().set_pos(0, row);
+                    print!(">> ");
                 }
 
 
@@ -79,7 +83,6 @@ pub fn shell() {
                     my_buff.push(c);
 
                     print!("{}", c);
-                    allow_print_prev = true;
                 },
             }
         }

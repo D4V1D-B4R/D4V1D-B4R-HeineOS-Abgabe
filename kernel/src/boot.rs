@@ -145,20 +145,24 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
 
     // Startup fun
-    let fb = terminal::framebuffer();
-    let bitmap = Bitmap::read_from_file("heinered.bmp").unwrap().unwrap();
-    let yffsilon = 150;
-    terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 258, yffsilon);
-    fb.lock().draw_str("HeineOS Vers. 0.1.0", 296, yffsilon + 253, framebuffer::RED, framebuffer::BLACK);
-    fb.lock().draw_str("(C) 2026 Heinrich Heine University, Duesseldorf Germany", 160, yffsilon + 280, framebuffer::RED, framebuffer::BLACK);
-    demo::lesson2::startup_melody();
+    let activate_startup = false;
 
-    let w = fb.lock().width();
-    let h = fb.lock().height();
-    println!(">> Initilasiized screen with size w{} x h{}.", w, h);
-    println!(">> Starting sheldon shell...");
-    pit::wait(3000);
-    terminal().lock().clear();
+    if activate_startup {
+        let fb = terminal::framebuffer();
+        let bitmap = Bitmap::read_from_file("heinered.bmp").unwrap().unwrap();
+        let yffsilon = 150;
+        terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 258, yffsilon);
+        fb.lock().draw_str("HeineOS Vers. 0.1.0", 296, yffsilon + 253, framebuffer::RED, framebuffer::BLACK);
+        fb.lock().draw_str("(C) 2026 Heinrich Heine University, Duesseldorf Germany", 160, yffsilon + 280, framebuffer::RED, framebuffer::BLACK);
+        demo::lesson2::startup_melody();
+
+        let w = fb.lock().width();
+        let h = fb.lock().height();
+        println!(">> Initilasiized screen with size w{} x h{}.", w, h);
+        println!(">> Starting sheldon shell...");
+        pit::wait(3000);
+        terminal().lock().clear();
+    }
 
     sheldon::shell::shell();
 

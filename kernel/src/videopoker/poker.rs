@@ -3,7 +3,7 @@ use core::fmt;
 use alloc::vec::Vec;
 use log::info;
 
-use crate::{device::{framebuffer, key::Scancode::{self, M}, keyboard::keyboard_buffer, pit, speaker::SPEAKER, terminal::{self, terminal}}, library::{bitmap::Bitmap, random::{self, Random}}, videopoker::{card::{Card, CardColor::{self, *}, CardValue::*}, hand}};
+use crate::{device::{framebuffer, key::Scancode::{self, M}, keyboard::keyboard_buffer, pit, speaker::SPEAKER, terminal::{self, framebuffer, terminal}}, library::{bitmap::Bitmap, random::{self, Random}}, videopoker::{card::{Card, CardColor::{self, *}, CardValue::*}, hand}};
 
 /// Generates a full card deck with 52 cards.
 fn generate_full_deck() -> Vec<Card> {
@@ -84,7 +84,7 @@ fn init_bitmaps() -> Vec<Bitmap> {
     bitmaps.push(Bitmap::read_from_file("kingleaf.bmp").unwrap().unwrap());//50
     bitmaps.push(Bitmap::read_from_file("kingspade.bmp").unwrap().unwrap());//51
 
-    bitmaps.push(Bitmap::read_from_file("card.bmp").unwrap().unwrap());//52, backside
+    bitmaps.push(Bitmap::read_from_file("backside.bmp").unwrap().unwrap());//52, backside
 
     bitmaps
 }
@@ -181,6 +181,12 @@ pub fn play() {
 
     // Initial title screen before first paly
     terminal().lock().clear();
+    for i in 0..5 {
+        if !selector[i] {
+            draw_backside_bitmap(&bitmaps, 160 * i, 0);
+        }
+    }
+    terminal().lock().set_pos(0, 20 * framebuffer::CHAR_HEIGHT);
     println!("One play costs 100 Credits. Press any key to begin...");
     key_buffer.poll_key_press();
     terminal().lock().clear();
@@ -278,7 +284,7 @@ pub fn play() {
                     Some(Scancode::F) => {
                         terminal().lock().clear();
                         if credits < 0 {
-                            print!("Better luck next time! You lost {} Credits in total! ", credits);
+                            print!("Better luck next time! You lost {} Credits in total! ", credits * (-1) );
                         }
                         else {
                             print!("Thanks for playing! You won {} Credits in total!", credits);
@@ -353,16 +359,17 @@ fn redraw_pointer(selector_pos: i64) {
 /// Writes info on current hand, win/loss and current credits.
 fn redraw_info(credits: i64, hand: &mut Vec<Card>, is_second_loop: bool) {
     terminal().lock().set_pos(0, 25 * framebuffer::CHAR_HEIGHT);
+    framebuffer().lock().clear_line(25 * framebuffer::CHAR_HEIGHT);
+    framebuffer().lock().clear_line(26 * framebuffer::CHAR_HEIGHT);
 
     if !is_second_loop {
         println!("Current Hand is {:?}, Value: {}. Current Credits: {}\n",
             hand::analyse_hand(hand), hand::analyse_hand(hand) as usize, credits);
-            println!("                             ");//TODO: add clear line function
     }
 
     else {
         let win = 100 * hand::analyse_hand(hand) as usize;
-        pit::wait(500);
+        pit::wait(200);
         if win == 0 {
             SPEAKER.lock().play_reject();
             println!("Hand was only a {:?}! You lost 100 Credits! Current Credits: {}", hand::analyse_hand(hand), credits);
