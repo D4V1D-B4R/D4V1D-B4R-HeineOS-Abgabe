@@ -26,7 +26,6 @@ pub fn keyboard_demo() {
 
     loop {
         let key_event = key_buffer.poll_key_event();
-        //let c = input::read_char();
         println!("{:?}", key_event);
         if key_event.scancode() == Some(Scancode::Escape) {
             break;

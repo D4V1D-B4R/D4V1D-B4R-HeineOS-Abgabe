@@ -99,7 +99,7 @@ impl Speaker {
 
         self.on();
         self.delay(duration);
-        pit::wait(duration);
+        pit::wait(duration / 2);
         self.off();
     }
 
@@ -982,7 +982,7 @@ pub fn ddr() {
 pub fn sisters() {
     let mut speaker = SPEAKER.lock();
     let duration: usize = 200;
-    for _ in 0..5 {
+    for _ in 0..3 {
         speaker.play(E1, duration);
         speaker.play(E1, duration);
         speaker.play(B1, duration);
@@ -1025,7 +1025,7 @@ pub fn sisters() {
 /// Plays beginning of "Ode an die Freude".
 pub fn ode_to_joy() { //KI Müll
     let mut speaker = SPEAKER.lock();
-    let duration = 100;
+    let duration = 300;
 
     speaker.play(330, duration);  // E4
     speaker.play(330, duration);  // E4

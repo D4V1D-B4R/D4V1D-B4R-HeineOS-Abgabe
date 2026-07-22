@@ -47,8 +47,8 @@ pub fn heap_demo() {
 
 /// A demo that plays songs via the PC speaker.
 pub fn speaker_demo() {
-    speaker::tetris();
-    speaker::aerodynamic();
+    //speaker::tetris();
+    //speaker::aerodynamic();
 
     speaker::sisters();
     speaker::ddr();

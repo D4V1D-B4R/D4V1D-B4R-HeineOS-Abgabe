@@ -106,7 +106,8 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     // Load the Global Descriptor Table (code in boot.asm)
     unsafe { load_gdt(); }
-    /////////////////////////// SECTION FOR Implementations ///////////////////////////
+
+    /////////////////////////// SECTION FOR INITIALISATIONS ///////////////////////////
 
     global::init_allocator(consts::heap_start(), consts::HEAP_SIZE);
     interrupt::idt::idt().load();
@@ -121,7 +122,7 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     pit::plugin();
 
-    /////////////////////////// SECTION FOR KERNEL OPTIONS///////////////////////////
+    /////////////////////////// SECTION FOR KERNEL OPTIONS ///////////////////////////
     
     //Logger::enable_terminal_logging(&LOGGER, true);
 
@@ -144,16 +145,18 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     /////////////////////////// SECTION FOR DEMO CODE ///////////////////////////
 
+    info!("LOG VIA SERIAL PORT IS WORKING!");
+
     // Startup fun
     let activate_startup = false;
 
     if activate_startup {
         let fb = terminal::framebuffer();
         let bitmap = Bitmap::read_from_file("heinered.bmp").unwrap().unwrap();
-        let yffsilon = 150;
-        terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 258, yffsilon);
-        fb.lock().draw_str("HeineOS Vers. 0.1.0", 296, yffsilon + 253, framebuffer::RED, framebuffer::BLACK);
-        fb.lock().draw_str("(C) 2026 Heinrich Heine University, Duesseldorf Germany", 160, yffsilon + 280, framebuffer::RED, framebuffer::BLACK);
+        let y = 150;
+        terminal().lock().framebuffer().lock().draw_bitmap(&bitmap, 258, y);
+        fb.lock().draw_str("HeineOS Vers. 0.1.0", 296, y + 253, framebuffer::RED, framebuffer::BLACK);
+        fb.lock().draw_str("(C) 2026 Heinrich Heine University, Duesseldorf Germany", 160, y + 280, framebuffer::RED, framebuffer::BLACK);
         demo::lesson2::startup_melody();
 
         let w = fb.lock().width();
@@ -174,7 +177,7 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     //demo::lesson2::speaker_demo();
     //demo::lesson4::coroutine_demo();
     //demo::lesson4::thread_demo();
-    //demo::lesson6::peanut_gb::play("/roms/tetris.gb");
+    //demo::lesson6::peanut_gb::play("/roms/2048.gb");
 
     // My stuff
     //demo::lesson2::piano_demo();
@@ -183,7 +186,6 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
     //demo::random_demo::random_with_limit_demo(54, random::DEFAULT_SEED_1, 1000000, 3);
     //demo::typing_demo::typing_demo();
     //videopoker::poker::play();
-
 
     // Testing and WIP...
     /*let my_handle = filesystem().open("/roms/2048-license.txt").unwrap();

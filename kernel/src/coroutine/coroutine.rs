@@ -140,13 +140,11 @@ impl Coroutine {
     /// Once started, coroutines cannot be exited.
     /// May only be called once.
     pub fn start(&mut self) {
-        info!("START CR");
         unsafe { coroutine_start(self.stack_ptr) };
     }
 
     /// Switch to the next coroutine.
     pub fn switch(&mut self) {
-        info!("SWITCH CR");
         unsafe { coroutine_switch(&mut self.stack_ptr, (*self.next).stack_ptr) };
     }
 
@@ -157,8 +155,6 @@ impl Coroutine {
 
     /// Set the next coroutine.
     pub fn set_next(&mut self, next: &mut Coroutine) {
-        info!("SET_NEXT CR");
-        //next.next = self.next;
         self.next = next;
     }
 
@@ -167,7 +163,6 @@ impl Coroutine {
     /// The prepared stack is used in 'coroutine_start' to start the first coroutine.
     /// Other coroutines are started by 'coroutine_switch' with the prepared stack.
     fn prepare_stack(&mut self) {
-        info!("PREPARE STACK CR");
         let kickoff = (Coroutine::kickoff as *const ()) as u64;
         let coroutine = ptr::from_mut(self) as u64;
         let length = self.stack.len();
@@ -195,7 +190,6 @@ impl Coroutine {
 
     /// Called indirectly by using the prepared stack in 'coroutine_start' and 'coroutine_switch'.
     fn kickoff(&mut self) {
-        info!("KICKOFF CR");
         // Interrupts are disabled during coroutine start, so we need to re-enable them here
         cpu::enable_int();
         (self.entry)(self);
