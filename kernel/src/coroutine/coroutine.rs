@@ -8,7 +8,6 @@
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use log::info;
 use core::arch::naked_asm;
 use core::ptr;
 use core::sync::atomic::{AtomicUsize, Ordering};
@@ -27,19 +26,19 @@ fn next_id() -> usize {
 #[unsafe(naked)]
 unsafe extern "C" fn coroutine_start(stack_ptr: usize) {
     naked_asm!(
-        //switch to stack addr ("stack_ptr" in rdi)
+        // switch to stack addr ("stack_ptr" in rdi)
         "mov rsp, rdi",
 
-        //write stack into registers
-        "popfq", //status reg rflags
-        "pop rbp", //base pointer for stack (stays the same for stackframe; rsp is the moving one)
-        "pop rdi", //string dest -> parametr for kickoff !!!
-        "pop rsi", //string src
-        "pop rdx", //data (extends 'a' reg)
-        "pop rcx", //counter
-        "pop rbx", //base
-        "pop rax", //accumulator
-        "pop r15", //general purpose regs
+        // write stack into registers
+        "popfq", // status reg rflags
+        "pop rbp", // base pointer for stack (stays the same for stackframe; rsp is the moving one)
+        "pop rdi", // string dest -> parametr for kickoff !!!
+        "pop rsi", // string src
+        "pop rdx", // data (extends 'a' reg)
+        "pop rcx", // counter
+        "pop rbx", // base
+        "pop rax", // accumulator
+        "pop r15", // general purpose regs
         "pop r14", //...
         "pop r13",
         "pop r12",
@@ -48,7 +47,7 @@ unsafe extern "C" fn coroutine_start(stack_ptr: usize) {
         "pop r9",
         "pop r8",
 
-        //return to kickoff
+        // return to kickoff
         "ret"
     )
 }
@@ -59,8 +58,8 @@ unsafe extern "C" fn coroutine_start(stack_ptr: usize) {
 #[unsafe(naked)]
 unsafe extern "C" fn coroutine_switch(current_stack_ptr: *mut usize, next_stack: usize) {
     naked_asm!(
-        //save registers on stack
-        "push r8", //general purpose regs
+        // save registers on stack
+        "push r8", // general purpose regs
         "push r9", //...
         "push r10",
         "push r11",
@@ -68,30 +67,30 @@ unsafe extern "C" fn coroutine_switch(current_stack_ptr: *mut usize, next_stack:
         "push r13",
         "push r14",
         "push r15",
-        "push rax", //accumulator
-        "push rbx", //base
-        "push rcx", //counter
-        "push rdx", //data (extends 'a' reg)
-        "push rsi", //string src
-        "push rdi", //string dest -> parametr for kickoff !!!
-        "push rbp", //base pointer for stack (stays the same for stackframe; rsp is the moving one)
-        "pushfq", //status reg rflags
+        "push rax", // accumulator
+        "push rbx", // base
+        "push rcx", // counter
+        "push rdx", // data (extends 'a' reg)
+        "push rsi", // string src
+        "push rdi", // string dest -> parametr for kickoff !!!
+        "push rbp", // base pointer for stack (stays the same for stackframe; rsp is the moving one)
+        "pushfq", // status reg rflags
 
-        //save rsp ("*current_stack_ptr" in rdi)
+        // save rsp ("*current_stack_ptr" in rdi)
         "mov [rdi], rsp",
-        //go to next rsp ("next_stack" in rsi)
+        // go to next rsp ("next_stack" in rsi)
         "mov rsp, rsi",
 
-        //load other stack
-        "popfq", //status reg rflags
-        "pop rbp", //base pointer for stack (stays the same for stackframe; rsp is the moving one)
-        "pop rdi", //string dest -> parametr for kickoff !!!
-        "pop rsi", //string src
-        "pop rdx", //data (extends 'a' reg)
-        "pop rcx", //counter
-        "pop rbx", //base
-        "pop rax", //accumulator
-        "pop r15", //general purpose regs
+        // load other stack
+        "popfq", // status reg rflags
+        "pop rbp", // base pointer for stack (stays the same for stackframe; rsp is the moving one)
+        "pop rdi", // string dest -> parametr for kickoff !!!
+        "pop rsi", // string src
+        "pop rdx", // data (extends 'a' reg)
+        "pop rcx", // counter
+        "pop rbx", // base
+        "pop rax", // accumulator
+        "pop r15", // general purpose regs
         "pop r14", //...
         "pop r13",
         "pop r12",
@@ -100,7 +99,7 @@ unsafe extern "C" fn coroutine_switch(current_stack_ptr: *mut usize, next_stack:
         "pop r9",
         "pop r8",
         
-        //return to next coroutine
+        // return to next coroutine
         "ret"
     )
 }

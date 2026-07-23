@@ -1,4 +1,4 @@
-use alloc::vec::{self, Vec};
+use alloc::vec::Vec;
 
 use crate::videopoker::card::{Card, CardColor, CardValue};
 

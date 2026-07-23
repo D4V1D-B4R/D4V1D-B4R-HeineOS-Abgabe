@@ -1,6 +1,5 @@
 use core::cmp::max;
 
-use log::info;
 
 /*
  * Driver for a linear framebuffer in 32-bit RGB format.
@@ -11,7 +10,6 @@ use log::info;
  */
 #[cfg(not(feature = "unifont"))]
 use crate::device::font_8x8;
-use crate::device::terminal::framebuffer;
 use crate::library::bitmap::Bitmap;
 use crate::multiboot;
 
@@ -204,8 +202,7 @@ impl Framebuffer {
 
     /// Scroll the framebuffer content up by the specified number of lines.
     /// The freed space at the bottom is cleared to black.
-    pub fn scroll_up(&mut self, lines: usize) {
-        //todo!("framebuffer::scroll_up() not implemented yet");       
+    pub fn scroll_up(&mut self, lines: usize) {   
         let buffer = self.address as *mut u8;
 
         let line_byte_size = lines * CHAR_HEIGHT * self.pitch;
@@ -242,7 +239,6 @@ impl Framebuffer {
             bmp_height
         };
 
-        //todo!("framebuffer::draw_bitmap() is not yet implemented");
         let buffer = self.address as *mut u8;
         let pixels = bitmap.pixel_data();
         let mut px = 0;

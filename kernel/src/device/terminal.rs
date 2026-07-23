@@ -9,9 +9,8 @@
 use core::fmt;
 use core::fmt::Write;
 use core::ops::DerefMut;
-use log::info;
 
-use crate::device::{font_8x8, framebuffer};
+use crate::device::framebuffer;
 use crate::device::framebuffer::{CHAR_HEIGHT, CHAR_WIDTH, Framebuffer};
 use crate::library::once::Once;
 use crate::library::random::{self, Random};
@@ -102,6 +101,7 @@ impl Terminal {
         let mut new_pos = (col, row);
         let max_width = framebuffer().lock().width - CHAR_WIDTH;
         let max_height = framebuffer().lock().height - CHAR_HEIGHT;
+        
         if col > max_width {
             new_pos.0 = max_width;
         }

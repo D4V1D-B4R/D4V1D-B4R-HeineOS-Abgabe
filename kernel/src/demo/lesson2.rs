@@ -8,7 +8,6 @@
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use log::info;
 use crate::allocator;
 use crate::device::key::Scancode;
 use crate::device::keyboard::keyboard_buffer;
@@ -47,8 +46,8 @@ pub fn heap_demo() {
 
 /// A demo that plays songs via the PC speaker.
 pub fn speaker_demo() {
-    //speaker::tetris();
-    //speaker::aerodynamic();
+    speaker::tetris();
+    speaker::aerodynamic();
 
     speaker::sisters();
     speaker::ddr();

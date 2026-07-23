@@ -17,29 +17,21 @@
 #![allow(dead_code)]
 #![allow(unreachable_code)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
+//#![allow(unused_imports)]
 
 
-use core::arch::asm;
 use core::str::FromStr;
 
-use alloc::string::String;
-use alloc::vec::{self, Vec};
 use log::{LevelFilter, debug, error, info};
 use tar_no_std::TarArchiveRef;
 use uefi::mem::memory_map::MemoryMapOwned;
 use crate::allocator::global;
-use crate::demo::typing_demo;
 use crate::device::framebuffer::{self, Framebuffer};
-use crate::device::key::Scancode;
 use crate::device::{cpu, keyboard, pic, pit};
-use crate::device::serial::COM1;
-use crate::device::terminal::{self, framebuffer, terminal};
-use crate::filesystem::tarfs::{self, filesystem};
+use crate::device::terminal::{self, terminal};
+use crate::filesystem::tarfs::{self};
 use crate::library::bitmap::Bitmap;
-use crate::library::random::{self, Random};
 use crate::logger::Logger;
-use crate::interrupt::idt;
 
 extern crate alloc;
 
@@ -109,18 +101,18 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     /////////////////////////// SECTION FOR INITIALISATIONS ///////////////////////////
 
-    global::init_allocator(consts::heap_start(), consts::HEAP_SIZE);
-    interrupt::idt::idt().load();
+    global::init_allocator(consts::heap_start(), consts::HEAP_SIZE); // global allocator
+    interrupt::idt::idt().load(); // interrupt handler
 
-    pic::PIC.lock().init();
-    interrupt::dispatcher::init_interrupt_dispatcher();
-    keyboard::plugin();
+    pic::PIC.lock().init(); // programmable interrupt controller
+    interrupt::dispatcher::init_interrupt_dispatcher(); // interrupt dispatcher
+    keyboard::plugin(); // register keyboard interrupt
 
-    keyboard::KEYBOARD.lock().set_repeat_rate(3, 30);//pic disable interrupt can be done here
+    keyboard::KEYBOARD.lock().set_repeat_rate(3, 30); // pic disable interrupt can be done here
 
-    cpu::enable_int();
+    cpu::enable_int(); // allow interrupts after all initialisations
 
-    pit::plugin();
+    pit::plugin(); // register programmable interval timer interrupt
 
     /////////////////////////// SECTION FOR KERNEL OPTIONS ///////////////////////////
     

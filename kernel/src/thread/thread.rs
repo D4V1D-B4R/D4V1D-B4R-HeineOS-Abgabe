@@ -14,7 +14,7 @@ use core::fmt::Display;
 use core::sync::atomic::AtomicUsize;
 use crate::consts::STACK_SIZE;
 use crate::device::cpu;
-use crate::thread::scheduler::{scheduler, unlock_scheduler};
+use crate::thread::scheduler::scheduler;
 
 static THREAD_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
 

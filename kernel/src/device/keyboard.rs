@@ -8,7 +8,6 @@
 
 
 use crate::device::pic::{self, PIC};
-use crate::device::serial::COM1;
 use crate::interrupt::dispatcher;
 use crate::library::once::Once;
 
@@ -198,33 +197,33 @@ impl Keyboard {
     /// 0 = 250ms, 1 = 500ms, 2 = 750ms, 3 = 1000ms
     pub fn set_repeat_rate(&mut self, delay: u8, speed: u8) {
         loop {
-            if unsafe { (self.control_port.inb() & (1 << 1)) == 0 } { //INPB (input buffer empty)
+            if unsafe { (self.control_port.inb() & (1 << 1)) == 0 } { // INPB (input buffer empty)
                 break;
             }
         }
 
-        unsafe { self.data_port.outb(0xF3) }; //set repeat rate
+        unsafe { self.data_port.outb(0xF3) }; // set repeat rate
 
         loop {
-            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB (check for answer)
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { // OUTB (check for answer)
                 break;
             }
         }
 
-        if unsafe { self.data_port.inb() } == 0xFA { //acknowledgement
-            unsafe { self.data_port.outb((delay << 5) + speed) }; //set delay + speed (96 = langsam)
+        if unsafe { self.data_port.inb() } == 0xFA { // acknowledgement
+            unsafe { self.data_port.outb((delay << 5) + speed) }; // set delay + speed (96 = langsam)
         }
         else {
             panic!("FAILED ACK1");
         }
 
         loop {
-            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB (check for answer)
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { // OUTB (check for answer)
                 break;
             }
         }
 
-        if unsafe { self.data_port.inb() } != 0xFA { //acknowledgement
+        if unsafe { self.data_port.inb() } != 0xFA { // acknowledgement
             panic!("FAILED ACK2");
         }
 
@@ -233,7 +232,7 @@ impl Keyboard {
     /// Turn on or off the specified keyboard LED.
     fn set_led(&mut self, led: LedStatus, on: bool) {
         loop {
-            if unsafe { (self.control_port.inb() & (1 << 1)) == 0 } { //INPB
+            if unsafe { (self.control_port.inb() & (1 << 1)) == 0 } { // INPB
                 break;
             }
         }
@@ -241,18 +240,18 @@ impl Keyboard {
         unsafe { self.data_port.outb(0xED) }; // command for keyboard leds
 
         loop {
-            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { // OUTB
                 break;
             }
         }
 
-        if unsafe { self.data_port.inb() } == 0xFA { //ack
+        if unsafe { self.data_port.inb() } == 0xFA { // ack
             if on {
-                unsafe { self.data_port.outb(led.bits()) }; //set led 
+                unsafe { self.data_port.outb(led.bits()) }; // set led 
             }
             else {
                  let reg = unsafe { self.data_port.inb() };
-                unsafe { self.data_port.outb(reg | led.bits()) }; //turn off (TODO ONLY GIVEN LED)
+                unsafe { self.data_port.outb(reg | led.bits()) }; // turn off
             }
             
         }
@@ -261,12 +260,12 @@ impl Keyboard {
         }
 
         loop {
-            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { //OUTB
+            if unsafe { (self.control_port.inb() & (1 << 0)) == 1 } { // OUTB
                 break;
             }
         }
 
-        if unsafe { self.data_port.inb() } != 0xFA { //ack
+        if unsafe { self.data_port.inb() } != 0xFA { // ack
             panic!("FAILED ACK2");
         }
     }

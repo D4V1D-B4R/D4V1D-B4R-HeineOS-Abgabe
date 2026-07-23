@@ -1,5 +1,5 @@
 use core::cmp;
-use alloc::{string::{String, ToString}, vec::Vec};
+use alloc::{string::String, vec::Vec};
 
 use crate::{demo, device::{framebuffer, key::Scancode, keyboard::keyboard_buffer, pit, speaker::SPEAKER, terminal::{framebuffer, terminal}}, library::random, videopoker};
 

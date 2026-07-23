@@ -3,7 +3,6 @@ use hashbrown::HashMap;
 
 use crate::videopoker::{card::{Card, CardValue::{self, *}}, hand::Hand::*};
 
-
 #[repr(usize)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Hand {

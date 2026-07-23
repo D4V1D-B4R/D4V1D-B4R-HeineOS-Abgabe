@@ -1,5 +1,5 @@
 use alloc::boxed::Box;
-use core::{fmt, ops::DerefMut};
+use core::fmt;
 
 /// Generic list element for our linked queue.
 pub struct Node<T> {
@@ -72,18 +72,18 @@ impl<T> LinkedQueue<T> {
         if !self.head.is_none() {
             let mut node = self.head.as_mut().unwrap();
             
-            if f(&node.data) { //Check Head
+            if f(&node.data) { // check Head
                 self.head = node.next.take();
                 return true;
             }
 
-            while let Some(next_node) = node.next.as_mut() { //Else check rest
+            while let Some(next_node) = node.next.as_mut() { // else check rest
                 if f(&next_node.data) {
                     node.next = next_node.next.take();
                     return true;
                 }
 
-                // Move on with the next node.
+                // move on with the next node
                 node = node.next.as_mut().unwrap();
             }
         }

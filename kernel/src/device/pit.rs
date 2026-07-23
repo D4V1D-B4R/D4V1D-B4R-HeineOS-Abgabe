@@ -7,15 +7,11 @@
  */
 
 use alloc::boxed::Box;
-use log::info;
-use core::sync::atomic::Ordering::Relaxed;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use crate::device::cpu::IoPort;
 use crate::device::{framebuffer, pic, terminal};
-use crate::device::pic::{Irq, PIC};
-use crate::device::terminal::{framebuffer, terminal};
+use crate::device::pic::PIC;
 use crate::interrupt::{self, dispatcher};
-use crate::interrupt::dispatcher::{IntVectors, InterruptVector};
 use crate::interrupt::isr::ISR;
 use crate::library::once::Once;
 use crate::thread::scheduler::scheduler;
@@ -66,7 +62,10 @@ pub fn plugin() {
         timer.set_interrupt_interval(TIMER_INTERRUPT_INTERVAL_MS); 
         timer
     });
-    dispatcher::IntVectors::register(dispatcher::InterruptVector::Pit,Box::new(TimerISR {interval_ms: 10}));
+
+    dispatcher::IntVectors::register(dispatcher::InterruptVector::Pit,
+        Box::new(TimerISR {interval_ms: 10}));
+    
     PIC.lock().allow(pic::Irq::Timer);
 }
 
@@ -86,27 +85,22 @@ impl ISR for TimerISR {
     /// This function updates the system time and triggers a context switch every 10 ms.
     fn trigger(&self) {
         SYSTEM_TIME.update(Ordering::Relaxed, Ordering::Relaxed, |a| a + 1);
-        
-        
-        
-            let sys_time = SYSTEM_TIME.load(Ordering::Relaxed);
+        let sys_time = SYSTEM_TIME.load(Ordering::Relaxed);
 
-            //draw spinner
-            if sys_time % 250 == 0 {
-                
-                let lock = terminal::framebuffer().try_lock();
-                if lock.is_some() {
-            lock.unwrap().draw_char(SPINNER_CHARS[SYSTEM_TIME.load(Ordering::Relaxed) / 250 % 4],
-             790, 0, framebuffer::YELLOW, framebuffer::BLACK);
+        // draw spinner
+        if sys_time % 250 == 0 { 
+            let lock = terminal::framebuffer().try_lock();
+            if lock.is_some() {
+                lock.unwrap().draw_char(SPINNER_CHARS[SYSTEM_TIME.load(Ordering::Relaxed) / 250 % 4],
+                790, 0, framebuffer::YELLOW, framebuffer::BLACK);
             }
         }
+
         // context switch
         if sys_time % self.interval_ms == 0{
-
             unsafe { interrupt::dispatcher::unlock_int_vectors() };
             scheduler().yield_cpu();
-        }
-        
+        }   
     }
 }
 

@@ -6,9 +6,9 @@
  * License: GPLv3
  */
 
-use core::{fmt::Write, sync::atomic::{AtomicBool, Ordering::{self, Relaxed}}};
+use core::{fmt::Write, sync::atomic::{AtomicBool, Ordering::Relaxed}};
 use log::{Metadata, Record};
-use crate::device::{pit, serial::{self, COM1}};
+use crate::device::{pit, serial::COM1};
 
 /// A simple logger implementing the `log::Log` trait, writing to the serial port (COM1).
 pub struct Logger {

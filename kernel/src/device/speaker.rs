@@ -92,14 +92,14 @@ impl Speaker {
     pub fn play(&mut self, frequency: usize, duration: usize) {
         let counter = PIT_FREQUENCY / frequency;
 
-        //0xB6 = 10 11 011 0 [Channel 2 | First low, then high counter | OP-Mode 3 | Binary Counter]
+        // 0xB6 = 10 11 011 0 [Channel 2 | First low, then high counter | OP-Mode 3 | Binary Counter]
         unsafe { self.pit_ctrl_port.outb(0xB6) };
         unsafe { self.pit_data2_port.outb((counter & 0xFF) as u8) };
         unsafe { self.pit_data2_port.outb((counter >> 0x8) as u8) };
 
         self.on();
-        self.delay(duration);
-        pit::wait(duration / 2);
+        //self.delay(duration);
+        pit::wait(duration);
         self.off();
     }
 
@@ -120,11 +120,11 @@ impl Speaker {
         self.play(E2,25);
     }
 
-    /// Play a note indefinetyl until manually turned off with off()
+    /// Play a note indefinetly until manually turned off with off()
     pub fn play_long(&mut self, frequency: usize) {
         let counter = PIT_FREQUENCY / frequency;
 
-        //0xB6 = 10 11 011 0 [Channel 2 | First low, then high counter | OP-Mode 3 | Binary Counter]
+        // 0xB6 = 10 11 011 0 [Channel 2 | First low, then high counter | OP-Mode 3 | Binary Counter]
         unsafe { self.pit_ctrl_port.outb(0xB6) };
         unsafe { self.pit_data2_port.outb((counter & 0xFF) as u8) };
         unsafe { self.pit_data2_port.outb((counter >> 0x8) as u8) };
@@ -141,19 +141,18 @@ impl Speaker {
 
     /// Turn off the speaker.
     pub fn off(&mut self) {
-        let status = unsafe { self.ppi_port.inb() & 0xFC};
-        unsafe { self.ppi_port.outb(status) };
+        let status = unsafe { self.ppi_port.inb() };
+        unsafe { self.ppi_port.outb(status & 0xFC) };
     }
 
     /// Return the current value of the PIT counter (16-bit).
     /// Used by `delay()` to check if the counter has reached 0 or has been reloaded.
     fn read_counter(&mut self) -> u16 {
         unsafe { self.pit_ctrl_port.outb(0x0)};
-        let low = unsafe { self.pit_data0_port.inb()} as u16;
-        let high = unsafe { self.pit_data0_port.inb()} as u16;
+        let low = unsafe { self.pit_data0_port.inb() } as u16;
+        let high = unsafe { self.pit_data0_port.inb() } as u16;
 
         (high << 8) | low
-        //unsafe { self.pit_ctrl_port.inw() as u16 }
     }
 
     /// Wait for a given amount of time in milliseconds using counter 0 of the PIT.
@@ -163,7 +162,7 @@ impl Speaker {
     fn delay(&mut self, duration: usize) {
         let freq = PIT_FREQUENCY / 1000;
 
-        //0x34 = 00 11 010 0 [Channel 0 | First low, then high counter | OP-Mode 2 | Binary Counter]
+        // 0x34 = 00 11 010 0 [Channel 0 | First low, then high counter | OP-Mode 2 | Binary Counter]
         unsafe { self.pit_ctrl_port.outb(0x34) };
         unsafe { self.pit_data0_port.outb((freq & 256) as u8) };
         unsafe { self.pit_data0_port.outb((freq >> 8) as u8) };
@@ -171,9 +170,9 @@ impl Speaker {
         let mut elapsed_ms = 0;
         let mut previous = self.read_counter();
 
-        while elapsed_ms < duration {
+        while elapsed_ms < duration { // KI Müll
             let current = self.read_counter();
-            // In mode 2 the counter counts downward. //KI Müll
+            // In mode 2 the counter counts downward.
             //
             // When it reloads:
             // previous might be small
@@ -954,7 +953,7 @@ pub fn aerodynamic() {
     speaker.off();
 }
 
-/// Plays beginning of the GDR anthem using the PC speaker.
+/// Plays beginning of the GDR anthem "Auferstanden aus Ruinen" using the PC speaker.
 pub fn ddr() {
     let mut speaker = SPEAKER.lock();
     speaker.play(A1, 1000);
@@ -982,7 +981,7 @@ pub fn ddr() {
 pub fn sisters() {
     let mut speaker = SPEAKER.lock();
     let duration: usize = 200;
-    for _ in 0..3 {
+    for _ in 0..2 {
         speaker.play(E1, duration);
         speaker.play(E1, duration);
         speaker.play(B1, duration);
@@ -1022,10 +1021,10 @@ pub fn sisters() {
     }
 }
 
-/// Plays beginning of "Ode an die Freude".
-pub fn ode_to_joy() { //KI Müll
+/// Plays beginning of "Ode an die Freude" using the PC speaker.
+pub fn ode_to_joy() { // KI Müll
     let mut speaker = SPEAKER.lock();
-    let duration = 300;
+    let duration = 250;
 
     speaker.play(330, duration);  // E4
     speaker.play(330, duration);  // E4

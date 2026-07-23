@@ -60,6 +60,7 @@ impl<T> Spinlock<T> {
         //       Use `try_lock()` repeatedly and only return, once the lock is successfully acquired.
 
         //SpinlockGuard { lock: self }
+
         let spinlock = loop {
             if let Some(s) = self.try_lock() {
                 break s;
@@ -84,6 +85,7 @@ impl<T> Spinlock<T> {
         //       Return the actual value of the `lock` variable.
 
         //false
+        
         self.lock.load(Ordering::Relaxed)
     }
     

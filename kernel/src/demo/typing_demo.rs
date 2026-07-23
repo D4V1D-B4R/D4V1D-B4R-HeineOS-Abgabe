@@ -1,4 +1,4 @@
-use crate::device::{framebuffer, key::Scancode, keyboard::keyboard_buffer, terminal::{self, Terminal, terminal}};
+use crate::device::{framebuffer, key::Scancode, keyboard::keyboard_buffer, terminal::terminal};
 
 pub fn typing_demo() {
     println!("Keyboard Demo:");

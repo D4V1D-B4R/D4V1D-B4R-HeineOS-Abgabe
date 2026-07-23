@@ -1,9 +1,6 @@
-use core::fmt;
-
 use alloc::vec::Vec;
-use log::info;
 
-use crate::{device::{framebuffer, key::Scancode::{self, M}, keyboard::keyboard_buffer, pit, speaker::SPEAKER, terminal::{self, framebuffer, terminal}}, library::{bitmap::Bitmap, random::{self, Random}}, videopoker::{card::{Card, CardColor::{self, *}, CardValue::*}, hand}};
+use crate::{device::{framebuffer, key::Scancode::{self}, keyboard::keyboard_buffer, pit, speaker::SPEAKER, terminal::{self, framebuffer, terminal}}, library::{bitmap::Bitmap, random::{self, Random}}, videopoker::{card::{Card, CardColor::{self}}, hand}};
 
 /// Generates a full card deck with 52 cards.
 fn generate_full_deck() -> Vec<Card> {

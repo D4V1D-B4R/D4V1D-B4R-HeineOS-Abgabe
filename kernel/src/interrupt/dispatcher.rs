@@ -82,7 +82,6 @@ pub unsafe fn unlock_int_vectors() {
 /// The main interrupt dispatcher.
 /// Every interrupt is routed here, if not specified otherwise in the IDT.
 pub fn dispatch_interrupt(vector: u8, stack_frame: InterruptStackFrame, error_code: Option<u64>) {
-    //log::info!("dispatcher disp_interrupt() called");
     cpu::without_interrupts( || {
         INT_VECTORS.lock().report(vector);
     });
@@ -109,7 +108,6 @@ impl IntVectors {
     /// Fill the ISR map with IDT_SIZE empty Options.
     /// Specific ISRs can be overwritten by calling `register()`.
     pub fn init(&mut self) {
-        log::info!("dispatcher init() called");
         if !self.map.is_empty() {
             panic!("ISR map is already initialized!");
         }
@@ -122,7 +120,6 @@ impl IntVectors {
     /// Register an ISR.
     /// Interrupts get disabled while registering the ISR to avoid race conditions with `dispatch_interrupt()`.
     pub fn register(vector: InterruptVector, isr: Box<dyn ISR>) {
-        log::info!("dispatcher register() called");
         cpu::without_interrupts( || {
             INT_VECTORS.lock().map[vector as usize] = Some(isr);
         });
@@ -130,8 +127,6 @@ impl IntVectors {
 
     /// Check if an interrupt service routine is registered for `vector`. If so, call it.
     pub fn report(&self, vector: u8) -> bool {
-        //log::info!("dispatcher report() called");
-
         let isr_is_present = self.map[vector as usize].is_some();
 
         if isr_is_present {

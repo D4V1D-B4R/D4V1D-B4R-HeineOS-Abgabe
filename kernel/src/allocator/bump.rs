@@ -7,7 +7,7 @@
  */
 
 use alloc::alloc::{GlobalAlloc, Layout};
-use crate::{allocator::global::{self, Locked, align_up}, consts};
+use crate::allocator::global::{Locked, align_up};
 
 /// A simple bump allocator that allocates memory in a linear fashion.
 pub struct BumpAllocator {

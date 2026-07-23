@@ -8,13 +8,10 @@
  */
 
 use alloc::boxed::Box;
-use log::info;
 use core::fmt::Display;
-use core::ops::Deref;
-use core::{fmt, ptr};
-use crate::allocator;
+use core::fmt;
 use crate::library::once::Once;
-use crate::library::queue::{self, LinkedQueue};
+use crate::library::queue::LinkedQueue;
 use crate::library::spinlock::Spinlock;
 use crate::thread::idle_thread::idle_thread;
 use crate::thread::thread::Thread;
@@ -91,7 +88,6 @@ impl Scheduler {
 
     /// Register a new thread in the ready queue.
     pub fn ready(&self, thread: Box<Thread>) {
-        info!("Registered: T{}", thread.id());
         let mut state = self.state.lock();
 
         state.ready_queue.enqueue(thread);
@@ -102,7 +98,6 @@ impl Scheduler {
         let mut state = self.state.lock();
 
         // The active thread is never None, since we must at least have the idle thread.
-        //let mut current = state.active_thread.take().unwrap();
         let ptr_on_current = Box::into_raw(state.active_thread.take().unwrap());
         // The idle thread never exits, so there must be at least one thread in the queue.
         let next = state.ready_queue.dequeue().unwrap();
@@ -124,15 +119,13 @@ impl Scheduler {
 
     /// Yield the CPU and switch to the next thread in the ready queue.
     pub fn yield_cpu(&self) {
-        //info!("YIELD");
-        //todo!("Scheduler::yield_cpu() is not implemented yet.");
         let state = self.state.try_lock();
-        //check if lock can be aquired
+        // check if lock can be aquired
         if state.is_none() {
             return;
         }
         let mut unstate = state.unwrap();
-        //check if scheduler is initialised
+        // check if scheduler is initialised
         if !unstate.initialized {
             return;
         }
@@ -143,7 +136,6 @@ impl Scheduler {
             return;
         }
 
-        //let current_thread = state.active_thread.take().unwrap();
         let ptr_on_current = Box::into_raw(unstate.active_thread.take().unwrap());
     
         unstate.active_thread = next_thread;
@@ -155,13 +147,10 @@ impl Scheduler {
             // while `state.active_thread` contains the next one.
             Thread::switch(ptr_on_current, unstate.active_thread.as_mut().unwrap().as_mut());
         }
-
-        //info!("YIELDed! Current thread is T{}", state.active_thread.as_ref().unwrap().id());
     }
 
     /// Kill the thread with the given ID by removing it from the ready queue.
     pub fn kill(&self, to_kill_id: usize) {
-        //todo!("Scheduler::kill() is not implemented yet.");
         self.state.lock().ready_queue.remove(|a| a.id() == to_kill_id);
     }
 

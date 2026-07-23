@@ -1,6 +1,4 @@
-use core::fmt::Write;
 
-use alloc::string::ToString;
 /*
  * Contains demos for coroutines and threads.
  *
@@ -8,12 +6,11 @@ use alloc::string::ToString;
  *         Fabian Ruhland, Heinrich Heine University Duesseldorf, 2026-01-15
  * License: GPLv3
  */
-use log::info;
 use crate::coroutine::coroutine::Coroutine;
 use crate::device::{framebuffer, pit};
-use crate::device::terminal::{Terminal, terminal};
+use crate::device::terminal::terminal;
 use crate::thread;
-use crate::thread::scheduler::{Scheduler, scheduler};
+use crate::thread::scheduler::scheduler;
 use crate::thread::thread::Thread;
 
 /// A demo function showcasing coroutines.

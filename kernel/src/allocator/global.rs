@@ -17,7 +17,7 @@
  */
 
 use alloc::alloc::Layout;
-use crate::allocator::bump::BumpAllocator;
+//use crate::allocator::bump::BumpAllocator;
 use crate::allocator::list::LinkedListAllocator;
 use crate::library::spinlock::{Spinlock, SpinlockGuard};
 

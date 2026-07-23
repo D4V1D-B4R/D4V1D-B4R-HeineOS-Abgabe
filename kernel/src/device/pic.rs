@@ -116,28 +116,28 @@ impl Pic {
     }
 
     /// Enable an IRQ to be forwarded to the processor by the PIC.
-    pub fn allow (&mut self, irq: Irq) { //0 allow
+    pub fn allow (&mut self, irq: Irq) { // 0 = allow
         let irq_number = irq as u8;
 
-        if irq_number < 8 { //master 0-7
+        if irq_number < 8 { // master 0-7
             let current = unsafe { self.data1.inb() };
-            unsafe { self.data1.outb(current & !(1 << irq_number)) }; //wähle zielbit (1 um x shiften), negativ (alles ausser bit) und verunde
+            unsafe { self.data1.outb(current & !(1 << irq_number)) }; // choose bit (shift 1 by X), negative (everything 1 except target bit) and <AND> values
         }
-        else { //slave 8-15
+        else { // slave 8-15
             let current = unsafe { self.data2.inb() };
             unsafe { self.data2.outb(current & !(1 << irq_number - 8)); }
         }
     }
 
     /// Disable an IRQ to be forwarded to the processor by the PIC.
-    pub fn forbid (&mut self, irq: Irq) { // 1 blocked
+    pub fn forbid (&mut self, irq: Irq) { // 1 = blocked
         let irq_number = irq as u8;
 
-        if irq_number < 8 { //master 0-7
+        if irq_number < 8 { // master 0-7
             let current = unsafe { self.data1.inb() };
-            unsafe { self.data1.outb(current | (1 << irq_number)) }; //wähle zielbit (1 um x shiften) und verodere (hinzufügen)
+            unsafe { self.data1.outb(current | (1 << irq_number)) }; // choose bit (shift 1 by X) and <OR> values (add bit)
         }
-        else { //slave 8-15
+        else { // slave 8-15
             let current = unsafe { self.data2.inb() };
             unsafe { self.data2.outb(current | !(1 << irq_number - 8)); }
         }
@@ -147,11 +147,11 @@ impl Pic {
     pub fn status (&mut self, irq: Irq) -> bool {
         let irq_number = irq as u8;
 
-        if irq_number < 8 { //master 0-7
+        if irq_number < 8 { // master 0-7
             let current = unsafe { self.data1.inb() };
-            return (current & (1 << irq_number)) == 0; //zielbit & bitmaske -> ja/nein
+            return (current & (1 << irq_number)) == 0; // target bit & bit mask -> true/false
         }
-        else { //slave 8-15
+        else { // slave 8-15
             let current = unsafe { self.data2.inb() };
             return (current & (1 << irq_number - 8)) == 0;
         }
