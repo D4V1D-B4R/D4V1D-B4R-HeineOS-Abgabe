@@ -9,7 +9,7 @@
 use alloc::vec::Vec;
 use core::ffi::{c_char, c_int, c_size_t, c_void, CStr};
 use log::{error, info};
-use crate::{device::{key::Scancode, keyboard::keyboard_buffer, terminal::framebuffer}, filesystem::tarfs::filesystem, library::once::Once};
+use crate::{device::{key::Scancode, keyboard::keyboard_buffer, pit, terminal::{framebuffer, terminal}}, filesystem::tarfs::filesystem, library::once::Once};
 
 unsafe extern "C" {
     /// Get the size of the `gb_s` structure (implemented in `peanut-gb.c`).
@@ -216,9 +216,15 @@ pub fn play(rom_path: &str) {
 
     unsafe { gb_init_lcd(gbs_ptr, lcd_draw_line as *const c_void) };
 
-    loop {
-        unsafe { gb_run_frame(gbs_ptr); }
+    terminal().lock().set_pos(0, 200);
+    println!("+++ Controls +++");
+    println!("Up/down/Left/Right: Arrow Keys");
+    println!("A/B: A and B on Keyboard respectively");
+    println!("Start: Enter");
+    println!("Select: Spacebar");
+    println!("Quit: Escape");
 
+    loop {
         if let Some(key_event) = key_ev_queue.pop_key_event() {
             let joy_state = unsafe { gb_get_joypad_ptr(gbs_ptr) };
             unsafe {
@@ -255,9 +261,23 @@ pub fn play(rom_path: &str) {
                         *joy_state ^= JoypadButton::Start as u8;
                         info!("ENTER");
                     },
+                    Some(Scancode::Escape) => { // start
+                        info!("Esc");
+                        return;
+                    },
                     _ => {},
                 }
             }
+        }
+
+        let start_time = pit::system_time();
+        unsafe { gb_run_frame(gbs_ptr); }
+        let diff = pit::system_time() - start_time;
+
+        // 60 fps -> 1000 ms / 60 = ~17 ms per frame
+        if diff < 17 {
+            info!("{}", diff);
+            pit::wait(17 - diff);
         }
     }
 }

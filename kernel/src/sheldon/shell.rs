@@ -38,7 +38,6 @@ pub fn shell() {
                     my_buff.clear();
                 },
 
-
                 // Delete typed in characters (from screen & buffer), without deleting the beginning of the line
                 Some(Scancode::Backspace) => {
                     my_buff.pop();
@@ -48,7 +47,6 @@ pub fn shell() {
                         .checked_sub(framebuffer::CHAR_WIDTH).unwrap_or(0), PADDING);
                     terminal().lock().set_pos(col, cursor_pos.1);
                 },
-
 
                 // Brings up the last typed in command
                 Some(Scancode::Up) => {
@@ -69,7 +67,6 @@ pub fn shell() {
                     terminal().lock().set_pos(0, row);
                     print!(">> ");
                 }
-
 
                 // Clears screen and quits the shell
                 Some(Scancode::Escape) => {
