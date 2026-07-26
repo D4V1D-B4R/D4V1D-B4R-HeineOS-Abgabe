@@ -33,6 +33,8 @@ args = [
     "-vga", "std",
     "-rtc", "base=localtime",
     "-serial", "stdio",
+    "-serial", "none",
+    "-serial", "file:gameboy.sav",
 
     # Hard disk drive configuration
     "-drive", "driver=raw,if=none,id=boot,file.filename=${IMAGE}",

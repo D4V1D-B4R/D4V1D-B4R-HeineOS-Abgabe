@@ -6,10 +6,10 @@
  * License: GPLv3
  */
 
-use alloc::vec::Vec;
+use alloc::vec::{self, Vec};
 use core::ffi::{c_char, c_int, c_size_t, c_void, CStr};
 use log::{error, info};
-use crate::{device::{key::Scancode, keyboard::keyboard_buffer, pit, terminal::{framebuffer, terminal}}, filesystem::tarfs::filesystem, library::once::Once};
+use crate::{device::{key::Scancode, keyboard::keyboard_buffer, pit, serial::COM3, terminal::{framebuffer, terminal}}, filesystem::tarfs::filesystem, library::{once::Once, spinlock::Spinlock}};
 
 unsafe extern "C" {
     /// Get the size of the `gb_s` structure (implemented in `peanut-gb.c`).
@@ -141,6 +141,9 @@ static PALETTE: &[u32] = &[
 /// The ROM file to be played by the emulator.
 static ROM: Once<Vec<u8>> = Once::new();
 
+/// Vec that contains the RAM
+static RAM: Once<Spinlock<Vec<u8>>> = Once::new();
+
 /// Read a byte from the ROM file at the offset specified by `addr`.
 /// This is a callback function for the PeanutGB emulator.
 unsafe extern "C" fn gb_rom_read(_gb: *mut c_void, addr: u32) -> u8 {
@@ -152,8 +155,7 @@ unsafe extern "C" fn gb_rom_read(_gb: *mut c_void, addr: u32) -> u8 {
 ///
 /// This is mostly needed for save game support and part of an optional assignment.
 unsafe extern "C" fn gb_cart_ram_read(_gb: *mut c_void, addr: u32) -> u8 {
-    // TODO: Read a byte from the save RAM (optional assignment)
-    0
+    RAM.get().unwrap().lock()[addr as usize]
 }
 
 /// Write a byte to the save RAM at the offset specified by `addr`.
@@ -161,7 +163,7 @@ unsafe extern "C" fn gb_cart_ram_read(_gb: *mut c_void, addr: u32) -> u8 {
 ///
 /// This is mostly needed for save game support and part of an optional assignment.
 unsafe extern "C" fn gb_cart_ram_write(_gb: *mut c_void, addr: u32, val: u8) {
-    // TODO: Write a byte to the save RAM (optional assignment)
+    RAM.get().unwrap().lock()[addr as usize] = val;
 }
 
 /// Draw a line of pixels from the Game Boy screen to the framebuffer.
@@ -193,11 +195,13 @@ pub fn play(rom_path: &str) {
     let my_handle = filesystem().open(rom_path).unwrap();
     let key_ev_queue = keyboard_buffer();
 
+    // Read ROM
     let rom_size = filesystem().size(my_handle).unwrap();
     ROM.init(|| {
         let mut my_buff = Vec::<u8>::with_capacity(rom_size);
         my_buff.resize(rom_size, 0);
         let _ = filesystem().read(my_handle, &mut my_buff);
+
         my_buff
         }
     );
@@ -206,6 +210,7 @@ pub fn play(rom_path: &str) {
     unsafe { gbs.set_len( gb_size() as usize); }
     let gbs_ptr = gbs.as_mut_ptr() as *mut c_void;
 
+    // Initalise gameboy
     unsafe { gb_init(gbs_ptr, 
         gb_rom_read, 
         gb_cart_ram_read, 
@@ -214,6 +219,23 @@ pub fn play(rom_path: &str) {
         core::ptr::null()) 
     };
 
+    // RAM stuff
+    let cs: c_size_t = 0;
+    let success;
+    unsafe { success = gb_get_save_size_s(gbs_ptr, cs as *mut c_size_t); }
+
+    if success != 0 {
+        panic!("Could not get RAM size.");
+    }
+
+    RAM.init(|| {
+        let mut my_buff = Vec::<u8>::with_capacity(rom_size);
+        my_buff.resize(rom_size, 0);
+
+        Spinlock::new(my_buff)
+    });
+
+    // Initialsie display
     unsafe { gb_init_lcd(gbs_ptr, lcd_draw_line as *const c_void) };
 
     terminal().lock().set_pos(0, 200);
@@ -224,6 +246,7 @@ pub fn play(rom_path: &str) {
     println!("Select: Spacebar");
     println!("Quit: Escape");
 
+    // Game loop
     loop {
         if let Some(key_event) = key_ev_queue.pop_key_event() {
             let joy_state = unsafe { gb_get_joypad_ptr(gbs_ptr) };
@@ -263,7 +286,7 @@ pub fn play(rom_path: &str) {
                     },
                     Some(Scancode::Escape) => { // start
                         info!("Esc");
-                        return;
+                        break;
                     },
                     _ => {},
                 }
@@ -280,4 +303,9 @@ pub fn play(rom_path: &str) {
             pit::wait(17 - diff);
         }
     }
+
+    RAM.get().unwrap().lock().clone().into_iter().for_each(|byte| {
+         COM3.lock().write_byte(byte);
+    });
+
 }
