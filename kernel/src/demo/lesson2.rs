@@ -8,6 +8,7 @@
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use log::info;
 use crate::allocator;
 use crate::device::key::Scancode;
 use crate::device::keyboard::keyboard_buffer;
@@ -16,30 +17,41 @@ use crate::device::speaker::{self, *};
 /// A simple heap demo, allocating and freeing memory on the heap.
 /// The allocator state is dumped before and after each operation.
 pub fn heap_demo() {
+    println!("Output via logging.");
+
+    // Just dump the list
+    info!("\nState of heap before any new allocations:");
     allocator::global::dump_free_list();
+
+    // new context area
     {
-        println!("Allocate Box::new(1)");
-
-        let mut vec = Vec::new();
-        for _ in 0..2 {
-            vec.push(Box::new(1));
-        }
-        println!("Done");
+        info!("\nAllocate Box::new(1):");
+        let a = Box::new((1,2));
+        let b = Box::new((3,4));
+        info!("Allocated a and b with {:?} and {:?} respectively.", a, b);
         allocator::global::dump_free_list();
-
-        let a = Box::new(1);
-        allocator::global::dump_free_list();
-        println!("Allocate Vec::from([1,2,3]");
-        let b: Vec<usize> = Vec::from([1,2,3]);
-        allocator::global::dump_free_list();
-        println!("{}{:?}", a, b);
     }
-    println!("Drop all");
+    // Leaving context, therefore dumping all
+    info!("\nDrop a and b");
     allocator::global::dump_free_list();
-    let mut vec = Vec::new();
-        for _ in 0..2 {
-            vec.push(Box::new(1));
-        }
+
+    // new context area
+    {
+        info!("\nAllocate Vector with three structs:");
+        let mut v: Vec<Box<(i32,i32)>> = Vec::new();
+
+        let a = Box::new((1,2));
+        let b = Box::new((3,4));
+        let c = Box::new((5,6));
+        info!("Allocated a, b and c with {:?}, {:?} and {:?} respectively.", a, b, c);
+        v.push(a);
+        v.push(b);
+        v.push(c);
+        info!("Pushed a,b and c into vec v.");
+        allocator::global::dump_free_list();
+    }
+    // Leaving context, therefore dumping all
+    info!("\nDrop all");
     allocator::global::dump_free_list();
     
 }

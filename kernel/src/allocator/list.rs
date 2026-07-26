@@ -9,6 +9,7 @@
 use core::mem;
 
 use alloc::alloc::{GlobalAlloc, Layout};
+use log::info;
 use crate::allocator::global::{align_up, Locked};
 
 /// Header of a free block in the list allocator.
@@ -131,21 +132,21 @@ impl LinkedListAllocator {
     pub fn dump_free_list(&mut self) {
         let mut current = &mut self.head;
         let mut i = 0;
-        println!("Free Blocks: ");
+        info!("Free Blocks: ");
         while let Some(viewed_block) = current.next.as_mut() {
-            println!("______________________________");
-            println!("Block No. {}", i);
-            println!("  Address: {}", viewed_block.start_addr());
-            println!("  End: {}", viewed_block.end_addr());
-            println!("  Size: {}", viewed_block.size);
-            println!("______________________________");
-            println!("              |               ");
-            println!("              V               ");
+            info!("______________________________");
+            info!("Block No. {}", i);
+            info!("  Address: {}", viewed_block.start_addr());
+            info!("  End: {}", viewed_block.end_addr());
+            info!("  Size: {}", viewed_block.size);
+            info!("______________________________");
+            info!("              |               ");
+            info!("              V               ");
 
             i += 1;
             current = current.next.as_mut().unwrap();
         }
-        println!("              X               ");
+        info!("              X               ");
     }
 
     /// Allocate memory of the given size and alignment.
