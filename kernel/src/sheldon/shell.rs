@@ -103,7 +103,9 @@ fn process_query(buffer: &Vec<char>) -> bool {
         "speaker_demo" => { demo::lesson2::speaker_demo(); },
         "coroutine_demo" => { demo::lesson4::coroutine_demo(); },
         "thread_demo" => { demo::lesson4::thread_demo(); },
-        "peanut_gb" => { demo::lesson6::peanut_gb::play("/roms/2048.gb");}
+        "peanut_gb" => { demo::lesson6::peanut_gb::play("/roms/2048.gb");},
+        "pci_print_devices_demo" => { demo::lesson7::print_pci_devices(); },
+        "pci_rtl_demo" => { demo::lesson7::rtl8139_demo(); },
 
         // My stuff
         "piano_demo" => { demo::lesson2::piano_demo(); },
@@ -143,6 +145,8 @@ fn help() {
         "clear",
         "heinrich",
         "help",
+        "pci_print_devices_demo",
+        "pci_rtl_demo" 
     ]);
 
     commands.sort();

@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::{string::ToString, vec::Vec};
 
 use crate::{device::{framebuffer, key::Scancode::{self}, keyboard::keyboard_buffer, pit, speaker::SPEAKER, terminal::{self, framebuffer, terminal}}, library::{bitmap::Bitmap, random::{self, Random}}, videopoker::{card::{Card, CardColor::{self}}, hand}};
 
@@ -146,6 +146,8 @@ pub fn play() {
     let key_buffer = keyboard_buffer(); // Keyboard buffer instance for player input
 
     let mut credits: i64 = 0; // the players credits
+    let mut wager: i64 = 100; // the current wager (default and minimum 100)
+    let mut earnings: i64 = 0; // keep track of total profit (shown after game)
 
     let mut deck: Vec<Card> = generate_full_deck(); // the full deck of cards
 
@@ -184,14 +186,14 @@ pub fn play() {
         }
     }
     terminal().lock().set_pos(0, 20 * framebuffer::CHAR_HEIGHT);
-    println!("One play costs 100 Credits. Press any key to begin...");
+    println!("First play costs 100 Credits. Press any key to begin...");
     key_buffer.poll_key_press();
     terminal().lock().clear();
 
-    credits -= 100;
+    credits -= wager;
 
     // Print first play screen
-    redraw_all(&mut hand, &bitmaps, is_second_loop, &selector, selector_pos, credits);
+    redraw_all(&mut hand, &bitmaps, is_second_loop, &selector, selector_pos, credits, wager);
 
     // Main game loop
     loop {
@@ -200,6 +202,7 @@ pub fn play() {
             let key_event = key_buffer.poll_key_event();
             if key_event.pressed() {
                 match key_event.scancode() {
+
                     // Continue with next round
                     Some(Scancode::Enter) => {
                         SPEAKER.lock().play_confirm();
@@ -212,10 +215,10 @@ pub fn play() {
                             }
                             is_second_loop = true;
 
-                            credits += 100 * hand::analyse_hand(&hand) as i64;
+                            credits += wager * hand::analyse_hand(&hand) as i64;
 
                             redraw_cards(&hand, &selector, &bitmaps);
-                            redraw_info(credits, &mut hand, is_second_loop);
+                            redraw_info(credits, wager, &mut hand, is_second_loop);
                 
                             break;
                         }
@@ -236,9 +239,9 @@ pub fn play() {
 
                             is_second_loop = false;
 
-                            credits -= 100;
+                            credits -= wager;
 
-                            redraw_all(&mut hand, &bitmaps, is_second_loop, &selector, selector_pos, credits);
+                            redraw_all(&mut hand, &bitmaps, is_second_loop, &selector, selector_pos, credits, wager);
                             
                             break;
                         }
@@ -264,6 +267,23 @@ pub fn play() {
                             selector_pos = (selector_pos + 1) % selector.len() as i64;
                             redraw_pointer(selector_pos);
                             break;
+                        }
+                    },
+
+                    Some(Scancode::Up) => {
+                        if is_second_loop {
+                            wager += 100;
+                            redraw_play_again_message(wager);
+                        }
+                    },
+
+                     Some(Scancode::Down) => {
+                        if is_second_loop {
+                            wager -= 100;
+                            if wager < 100 {
+                                wager = 100;
+                            }
+                            redraw_play_again_message(wager);
                         }
                     },
 
@@ -354,22 +374,22 @@ fn redraw_pointer(selector_pos: i64) {
 }
 
 /// Writes info on current hand, win/loss and current credits.
-fn redraw_info(credits: i64, hand: &mut Vec<Card>, is_second_loop: bool) {
+fn redraw_info(credits: i64, wager: i64, hand: &mut Vec<Card>, is_second_loop: bool) {
     terminal().lock().set_pos(0, 25 * framebuffer::CHAR_HEIGHT);
     framebuffer().lock().clear_line(25 * framebuffer::CHAR_HEIGHT);
-    framebuffer().lock().clear_line(26 * framebuffer::CHAR_HEIGHT);
+    //framebuffer().lock().clear_line(26 * framebuffer::CHAR_HEIGHT);
 
     if !is_second_loop {
-        println!("Current Hand is {:?}, Value: {}. Current Credits: {}\n",
-            hand::analyse_hand(hand), hand::analyse_hand(hand) as usize, credits);
+        println!("Current Hand is {:?}, Value: {}. Current Credits: {}, playing with {}.\n",
+            hand::analyse_hand(hand), hand::analyse_hand(hand) as usize, credits, wager);
     }
 
     else {
-        let win = 100 * hand::analyse_hand(hand) as usize;
+        let win = wager * hand::analyse_hand(hand) as i64;
         pit::wait(200);
         if win == 0 {
             SPEAKER.lock().play_reject();
-            println!("Hand was only a {:?}! You lost 100 Credits! Current Credits: {}", hand::analyse_hand(hand), credits);
+            println!("Hand was only a {:?}! You lost {} Credits! Current Credits: {}", hand::analyse_hand(hand), wager, credits);
         }
         else {
             SPEAKER.lock().play_confirm();
@@ -378,25 +398,45 @@ fn redraw_info(credits: i64, hand: &mut Vec<Card>, is_second_loop: bool) {
             SPEAKER.lock().play_confirm();
             println!("You won {} Credits with a {:?}! Current Credits: {}", win, hand::analyse_hand(hand), credits);
         }
-        println!("Press Enter to play again.");
+        redraw_play_again_message(wager);
     }
+}
+
+fn redraw_play_again_message(wager: i64) {
+    let fb = terminal::framebuffer();
+    framebuffer().lock().clear_line(26 * framebuffer::CHAR_HEIGHT);
+    framebuffer().lock().clear_line(27 * framebuffer::CHAR_HEIGHT);
+
+    let str1 = " Press [Enter] to play again for ";
+    let w_str = wager.to_string();
+    let str2 = " Credits, or use [Up] and [Down] to change the wager.";
+    
+    fb.lock().draw_str(str1, 0, 26 * framebuffer::CHAR_HEIGHT,
+        framebuffer::RED, framebuffer::BLACK);
+    fb.lock().draw_str(&w_str, str1.len() * framebuffer::CHAR_WIDTH, 26 * framebuffer::CHAR_HEIGHT, 
+        framebuffer::BLACK, framebuffer::RED);
+    fb.lock().draw_str(str2, (str1.len() + w_str.len()) * framebuffer::CHAR_WIDTH, 26 * framebuffer::CHAR_HEIGHT,
+        framebuffer::RED, framebuffer::BLACK);
+    fb.lock().draw_str("(Minimum wager is 100 Credits.)", 0, 27 * framebuffer::CHAR_HEIGHT,
+        framebuffer::RED, framebuffer::BLACK);
 }
 
 /// Writes controls on screen.
 fn redraw_controls() {
     terminal().lock().set_pos(0, 30 * framebuffer::CHAR_HEIGHT);
 
-    println!("Select cards to keep and try to score high! One game costs 100 Credits.");
-    println!("[<-][->] Move the pointer with the arrow keys.");
-    println!("[ ____ ] Select a card to keep with the space bar. It will appear as >HOLD< in the selector.");
-    println!("[ENTER ] Press enter to try your luck!");
+    println!("Select cards to keep and try to score high!");
+    println!("[<-]  [->] Move the pointer with the left and right arrow keys.");
+    println!("[Up][Down] Increase and reduce the wager with the up and down arrow keys (min. is 100 Credits).");
+    println!(" [ ____ ] Select a card to keep with the space bar. It will appear as >HOLD< in the selector.");
+    println!(" [ENTER] Press enter to try your luck!");
     println!("[F] Press F to exit the game anytime.");
 }
 
 /// Redraws everything using all of the above
-fn redraw_all(hand: &mut Vec<Card>, bitmaps: &Vec<Bitmap>, is_second_loop: bool, selector: &Vec<bool>, selector_pos: i64, credits: i64) {
+fn redraw_all(hand: &mut Vec<Card>, bitmaps: &Vec<Bitmap>, is_second_loop: bool, selector: &Vec<bool>, selector_pos: i64, credits: i64, wager: i64) {
     redraw_cards(hand, selector, bitmaps);
-    redraw_info(credits, hand, is_second_loop);
+    redraw_info(credits, wager, hand, is_second_loop);
     redraw_selector(selector);
     redraw_pointer(selector_pos);
     redraw_controls();
