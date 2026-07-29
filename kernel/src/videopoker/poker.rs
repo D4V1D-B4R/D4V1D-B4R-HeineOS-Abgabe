@@ -122,7 +122,6 @@ fn draw_card_bitmap(card: &Card, bitmaps: &Vec<Bitmap>, x: usize, y: usize) {
     terminal().lock().framebuffer().lock().draw_bitmap(&bitmaps[base + add], x + 10, 16);
 }
 
-
 /// Draws the backside of the card on the screen.
 fn draw_backside_bitmap(bitmaps: &Vec<Bitmap>, x: usize, y: usize) {
     terminal().lock().framebuffer().lock().draw_bitmap(&bitmaps[52], x + 10, 16);
@@ -147,7 +146,6 @@ pub fn play() {
 
     let mut credits: i64 = 0; // the players credits
     let mut wager: i64 = 100; // the current wager (default and minimum 100)
-    let mut earnings: i64 = 0; // keep track of total profit (shown after game)
 
     let mut deck: Vec<Card> = generate_full_deck(); // the full deck of cards
 
@@ -181,9 +179,7 @@ pub fn play() {
     // Initial title screen before first paly
     terminal().lock().clear();
     for i in 0..5 {
-        if !selector[i] {
-            draw_backside_bitmap(&bitmaps, 160 * i, 0);
-        }
+        draw_backside_bitmap(&bitmaps, 160 * i, 0);
     }
     terminal().lock().set_pos(0, 20 * framebuffer::CHAR_HEIGHT);
     println!("First play costs 100 Credits. Press any key to begin...");
@@ -321,13 +317,15 @@ pub fn play() {
 
 /// Draws all newly pulled cards. First backside, then front reveal.
 fn redraw_cards(hand: &Vec<Card>, selector: &Vec<bool>, bitmaps: &Vec<Bitmap>) {
+    let row = 0 * framebuffer::CHAR_HEIGHT;
+
     let wait_time = 200;
 
     for i in 0..5 {
         if !selector[i] {
-            draw_backside_bitmap(bitmaps, 160 * i, 0);
+            draw_backside_bitmap(bitmaps, 160 * i, row);
             pit::wait(wait_time);
-            draw_card_bitmap(&hand[i], bitmaps, 160 * i, 0);
+            draw_card_bitmap(&hand[i], bitmaps, 160 * i, row);
             pit::wait(wait_time);
         }
     }
@@ -335,19 +333,19 @@ fn redraw_cards(hand: &Vec<Card>, selector: &Vec<bool>, bitmaps: &Vec<Bitmap>) {
 
 /// Draws the selector and current selection.
 fn redraw_selector(selector: &Vec<bool>) {
+    let row = 14 * framebuffer::CHAR_HEIGHT;
+
     let fb = terminal::framebuffer();
 
-    let len = 20 * framebuffer::CHAR_WIDTH;
-
     let mut x = 0;
-    let y = 14;
+    let len = 20 * framebuffer::CHAR_WIDTH;    
 
     for is_held in selector {
         if *is_held {
-           fb.lock().draw_str("[     >HOLD<      ]", x, y * framebuffer::CHAR_HEIGHT, framebuffer::BLACK, framebuffer::RED);
+           fb.lock().draw_str("[     >HOLD<      ]", x, row, framebuffer::BLACK, framebuffer::RED);
         }
         else {
-             fb.lock().draw_str("[      HOLD       ]", x, y * framebuffer::CHAR_HEIGHT, framebuffer::RED, framebuffer::BLACK);
+             fb.lock().draw_str("[      HOLD       ]", x, row, framebuffer::RED, framebuffer::BLACK);
         }
         x += len;
     }
@@ -355,19 +353,19 @@ fn redraw_selector(selector: &Vec<bool>) {
 
 /// Draws the pointer to the selector, consisitng of a simple 'A'.
 fn redraw_pointer(selector_pos: i64) {
+    let row = 15  * framebuffer::CHAR_HEIGHT;
+    
     let fb = terminal::framebuffer();
 
-    let len = 20 * framebuffer::CHAR_WIDTH;
-
     let mut x = 0;
-    let y = 15;
+    let len = 20 * framebuffer::CHAR_WIDTH;
 
     for i in 0..5 {
         if i == selector_pos {
-            fb.lock().draw_str("        A          ", x, y * framebuffer::CHAR_HEIGHT, framebuffer::RED, framebuffer::BLACK);
+            fb.lock().draw_str("        A          ", x, row, framebuffer::RED, framebuffer::BLACK);
         }
         else {
-            fb.lock().draw_str("                   ", x, y * framebuffer::CHAR_HEIGHT, framebuffer::RED, framebuffer::BLACK);
+            fb.lock().draw_str("                   ", x, row, framebuffer::RED, framebuffer::BLACK);
         }
         x += len;
     }
@@ -375,9 +373,10 @@ fn redraw_pointer(selector_pos: i64) {
 
 /// Writes info on current hand, win/loss and current credits.
 fn redraw_info(credits: i64, wager: i64, hand: &mut Vec<Card>, is_second_loop: bool) {
-    terminal().lock().set_pos(0, 25 * framebuffer::CHAR_HEIGHT);
-    framebuffer().lock().clear_line(25 * framebuffer::CHAR_HEIGHT);
-    //framebuffer().lock().clear_line(26 * framebuffer::CHAR_HEIGHT);
+    let row = 25 * framebuffer::CHAR_HEIGHT;
+
+    terminal().lock().set_pos(0, row);
+    framebuffer().lock().clear_line(row);
 
     if !is_second_loop {
         println!("Current Hand is {:?}, Value: {}. Current Credits: {}, playing with {}.\n",
@@ -403,37 +402,41 @@ fn redraw_info(credits: i64, wager: i64, hand: &mut Vec<Card>, is_second_loop: b
 }
 
 fn redraw_play_again_message(wager: i64) {
+    let row = 26 * framebuffer::CHAR_HEIGHT;
     let fb = terminal::framebuffer();
-    framebuffer().lock().clear_line(26 * framebuffer::CHAR_HEIGHT);
-    framebuffer().lock().clear_line(27 * framebuffer::CHAR_HEIGHT);
+    framebuffer().lock().clear_line(row);
+    framebuffer().lock().clear_line(row + framebuffer::CHAR_HEIGHT);
 
-    let str1 = " Press [Enter] to play again for ";
+    let str1 = "Press [Enter] to play again for ";
     let w_str = wager.to_string();
     let str2 = " Credits, or use [Up] and [Down] to change the wager.";
     
-    fb.lock().draw_str(str1, 0, 26 * framebuffer::CHAR_HEIGHT,
+    fb.lock().draw_str(str1, 0, row,
         framebuffer::RED, framebuffer::BLACK);
-    fb.lock().draw_str(&w_str, str1.len() * framebuffer::CHAR_WIDTH, 26 * framebuffer::CHAR_HEIGHT, 
+    fb.lock().draw_str(&w_str, str1.len() * framebuffer::CHAR_WIDTH, row, 
         framebuffer::BLACK, framebuffer::RED);
-    fb.lock().draw_str(str2, (str1.len() + w_str.len()) * framebuffer::CHAR_WIDTH, 26 * framebuffer::CHAR_HEIGHT,
+    fb.lock().draw_str(str2, (str1.len() + w_str.len()) * framebuffer::CHAR_WIDTH, row,
         framebuffer::RED, framebuffer::BLACK);
-    fb.lock().draw_str("(Minimum wager is 100 Credits.)", 0, 27 * framebuffer::CHAR_HEIGHT,
+    
+    fb.lock().draw_str("(Minimum wager is 100 Credits.)", 0, row + framebuffer::CHAR_HEIGHT,
         framebuffer::RED, framebuffer::BLACK);
 }
 
 /// Writes controls on screen.
 fn redraw_controls() {
-    terminal().lock().set_pos(0, 30 * framebuffer::CHAR_HEIGHT);
+    let row = 30 * framebuffer::CHAR_HEIGHT;
 
-    println!("Select cards to keep and try to score high!");
-    println!("[<-]  [->] Move the pointer with the left and right arrow keys.");
+    terminal().lock().set_pos(0, row);
+
+    println!("Select cards to keep and try to score high! Controls:");
+    println!("[<-] [->] Move the pointer with the left and right arrow keys.");
     println!("[Up][Down] Increase and reduce the wager with the up and down arrow keys (min. is 100 Credits).");
-    println!(" [ ____ ] Select a card to keep with the space bar. It will appear as >HOLD< in the selector.");
-    println!(" [ENTER] Press enter to try your luck!");
+    println!("[ ____ ] Select a card to keep with the space bar. It will appear as >HOLD< in the selector.");
+    println!("[ENTER] Press enter to try your luck!");
     println!("[F] Press F to exit the game anytime.");
 }
 
-/// Redraws everything using all of the above
+/// Redraws everything using all of the above (except for play again message)
 fn redraw_all(hand: &mut Vec<Card>, bitmaps: &Vec<Bitmap>, is_second_loop: bool, selector: &Vec<bool>, selector_pos: i64, credits: i64, wager: i64) {
     redraw_cards(hand, selector, bitmaps);
     redraw_info(credits, wager, hand, is_second_loop);
@@ -441,10 +444,3 @@ fn redraw_all(hand: &mut Vec<Card>, bitmaps: &Vec<Bitmap>, is_second_loop: bool,
     redraw_pointer(selector_pos);
     redraw_controls();
 }
-/*
-TODO:
-- create clear line function!!! (brauche ich das?)
-- backside of cards
-- facecards
-- use framebuffer only?
-*/
