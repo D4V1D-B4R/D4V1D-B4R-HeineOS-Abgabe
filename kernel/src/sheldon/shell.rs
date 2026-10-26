@@ -106,6 +106,7 @@ fn process_query(buffer: &Vec<char>) -> bool {
         "peanut_gb" => { demo::lesson6::peanut_gb::play("/roms/2048.gb");},
         "pci_print_devices_demo" => { demo::lesson7::print_pci_devices(); },
         "pci_rtl_demo" => { demo::lesson7::rtl8139_demo(); },
+        "lesson8" => {demo::lesson8::user_thread_demo();}
 
         // My stuff
         "piano_demo" => { demo::lesson2::piano_demo(); },
@@ -146,7 +147,8 @@ fn help() {
         "heinrich",
         "help",
         "pci_print_devices_demo",
-        "pci_rtl_demo" 
+        "pci_rtl_demo" ,
+        "lesson8"
     ]);
 
     commands.sort();

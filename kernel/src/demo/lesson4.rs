@@ -52,12 +52,12 @@ fn coroutine_loop(coroutine: &mut Coroutine) {
 pub fn thread_demo() {
     terminal().lock().clear();
     println!("Thread demo:");
-    println!("This demo cannot be exited. Please reboot the systgem to get back to the menu.");
+    println!("This demo cannot be exited. Please reboot the system to get back to the menu.");
 
     let shed = thread::scheduler::scheduler();
-    let thread_1 = Thread::new(thread_entry);
-    let thread_2 = Thread::new(thread_entry);
-    let thread_3 = Thread::new(thread_entry);
+    let thread_1 = Thread::new_kernel_thread(thread_entry);
+    let thread_2 = Thread::new_kernel_thread(thread_entry);
+    let thread_3 = Thread::new_kernel_thread(thread_entry);
 
     shed.ready(thread_1);
     shed.ready(thread_2);

@@ -49,6 +49,7 @@ mod coroutine;
 mod filesystem;
 mod videopoker;
 mod sheldon;
+mod paging;
 
 unsafe extern "C" {
     fn load_gdt();
@@ -98,6 +99,9 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
 
     // Load the Global Descriptor Table (code in boot.asm)
     unsafe { load_gdt(); }
+
+    // Set USER flag in each page table entry (temporary solution)
+    paging::pages::setup_initial_paging();
 
     /////////////////////////// SECTION FOR INITIALISATIONS ///////////////////////////
 

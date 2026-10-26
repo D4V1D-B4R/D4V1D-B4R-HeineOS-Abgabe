@@ -25,7 +25,7 @@ pub fn system_time() -> usize {
 pub fn wait(ms: usize) {
     let start_time = system_time();
     while system_time() - start_time < ms {
-        scheduler().yield_cpu();
+        //scheduler().yield_cpu(); //das geht nicht im user mode
     }
 }
 

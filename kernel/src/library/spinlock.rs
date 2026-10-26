@@ -65,7 +65,7 @@ impl<T> Spinlock<T> {
             if let Some(s) = self.try_lock() {
                 break s;
             }
-            scheduler().yield_cpu();
+            //scheduler().yield_cpu();
         };
 
         spinlock
