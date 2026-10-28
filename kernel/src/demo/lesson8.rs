@@ -1,4 +1,4 @@
-use core::arch::asm;
+//use core::arch::asm;
 
 use crate::device::pit;
 use crate::device::terminal::terminal;
@@ -24,7 +24,7 @@ fn kernel_thread() {
     for i in 0..cols - 1 {
         {
             let mut terminal = terminal().lock();
-            terminal.set_pos(i, id);
+            terminal.set_pos(i*8, id);
             terminal.put_char('K');
         }
 
@@ -36,14 +36,14 @@ fn user_thread() {
     let id = scheduler().get_active_tid();
     let cols = 80;
 
-    unsafe {
+    /*unsafe {
         asm!("in al, 0x60");
-    }
+    }*/
 
     for i in 0..cols - 1 {
         {
             let mut terminal = terminal().lock();
-            terminal.set_pos(i, id);
+            terminal.set_pos(i*8, id*8);
             terminal.put_char('U');
         }
 
