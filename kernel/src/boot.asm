@@ -235,13 +235,13 @@ align 8
 gdt:
     dw  0, 0, 0, 0  ; Null descriptor
 
-    ; Kernel code segment descriptor
+    ; Kernel code segment descriptor (+8 offset)
     dw  0xffff     ; Limit [00:15] = 0xffff (4 GiB)
     dw  0x0000     ; Base  [00:15] = 0
     dw  0x9a00     ; Base  [16:23] = 0; Access Byte = { Code Segment, Readable, DPL = 0, Present }
     dw  0x00af     ; Limit [16:19] = 0xf; Base [31:24] = 0; Flags = { Granularity = 4 KiB, Long Mode }
 
-    ; Kernel data segment descriptor
+    ; Kernel data segment descriptor (+16 offset)
     dw  0xffff     ; Limit [00:15] = 0xffff (4 GiB)
     dw  0x0000     ; Base  [00:15] = 0
     dw  0x9200     ; Base  [16:23] = 0; Access Byte = { Data Segment, Writable, DPL = 0, Present }
@@ -249,13 +249,13 @@ gdt:
 
     ; TODO: Add user code and data segments -> Umgekehrt schreiben! P(1) DPL(11) S(1) TYPE(1010c/0010d) Base(0000 0000)
 
-    ; User code segment descriptor
+    ; User code segment descriptor (+24 offset)
     dw  0xffff     ; Limit [00:15] = 0xffff (4 GiB)
     dw  0x0000     ; Base  [00:15] = 0
     dw  0xfa00     ; Base  [16:23] = 0; Access Byte = { Code Segment, Readable, DPL = 3, Present }
     dw  0x00af     ; Limit [16:19] = 0xf; Base [31:24] = 0; Flags = { Granularity = 4 KiB, Long Mode }
 
-    ; User data segment descriptor
+    ; User data segment descriptor (+32 offset)
     dw  0xffff     ; Limit [00:15] = 0xffff (4 GiB)
     dw  0x0000     ; Base  [00:15] = 0
     dw  0xf200     ; Base  [16:23] = 0; Access Byte = { Data Segment, Writable, DPL = 3, Present }
@@ -282,7 +282,7 @@ gdt_descriptor:
 
 tss:
     times 102 db 0 ; Set all TSS fields to 0
-    dw 0x68 ; I/O-bitmap offset (no IO bitmap, so set to size of TSS 0x68 = 104)
+    dw 0x68 ; I/O-bitmap offset (no IO bitmap, so set to size of TSS 0x68 = 104) //TODO: 0x67 damit offset stimmt (siehe aufgabe b2)
 
 [SECTION .bss]
 

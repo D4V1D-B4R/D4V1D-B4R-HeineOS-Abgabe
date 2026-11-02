@@ -16,6 +16,7 @@
 use core::arch::asm;
 use core::ptr;
 use crate::interrupt::dispatcher::dispatch_interrupt;
+use crate::syscall::dispatcher::dispatch_syscall;
 use crate::library::once::Once;
 
 /// Static instance of the Interrupt Descriptor Table (IDT).
@@ -24,7 +25,11 @@ static IDT: Once<Idt> = Once::new();
 
 /// Global access to the IDT via a static reference.
 pub fn idt() -> &'static Idt {
-    IDT.init(|| Idt::new())
+    IDT.init(|| {
+        let mut idt = Idt::new();
+        idt.set_entry(0x80, IdtEntry::syscall_gate(dispatch_syscall));
+        idt
+    })
 }
 
 /// The IDT has 256 entries.
@@ -85,10 +90,10 @@ impl IdtEntry {
     /// Each entry has the same selector and options:
     /// The selector is the second entry in the GDT (kernel code segment) -> 1 * 8 = 8.
     /// The options are always 'Present', 'DPL=0' and '64-bit interrupt gate'.
-    const fn new(offset: u64) -> IdtEntry {
+    const fn new_interrupt_gate(offset: u64) -> IdtEntry {
         IdtEntry {
             offset_low: (offset & 0xFFFF) as u16,
-            selector: 0x8,    
+            selector: 0x8,   //offset in gdt 
             options: 0x8E00,    //1 00 0 1110  = 8E
             offset_mid: ((offset >> 16) & 0xFFFF) as u16,
             offset_high: (offset >> 32) as u32,
@@ -99,7 +104,7 @@ impl IdtEntry {
     /// Create a new IDT entry for an interrupt handler function.
     /// The function must be marked as 'extern "x86-interrupt"'.
     pub fn without_error_code(handler: extern "x86-interrupt" fn(InterruptStackFrame)) -> IdtEntry {
-        IdtEntry::new(handler as u64)
+        IdtEntry::new_interrupt_gate(handler as u64)
     }
 
     /// Create a new IDT entry for an interrupt handler function with an error code.
@@ -107,7 +112,27 @@ impl IdtEntry {
     /// This is only used for some CPU exceptions (e.g. Page Faults).
     /// See the OSDev wiki for a full list of exceptions: https://wiki.osdev.org/Exceptions
     pub fn with_error_code(handler: extern "x86-interrupt" fn(InterruptStackFrame, error_code: u64)) -> IdtEntry {
-        IdtEntry::new(handler as u64)
+        IdtEntry::new_interrupt_gate(handler as u64)
+    }
+
+    /// Create a new IDT entry for a trap gate at the given offset.
+    /// This is used for system calls, which should be accessible from user mode (DPL=3).
+    const fn new_trap_gate(offset: u64) -> IdtEntry {
+        //panic!("IdtEntry::new_trap_gate() is not implemented yet!");//TODO
+        IdtEntry {
+            offset_low: (offset & 0xFFFF) as u16,
+            selector: 8,//selector: 0x18, // = 24 offset in gdt   
+            options: 0xEF00,    //1 11 0 1111  = EF
+            offset_mid: ((offset >> 16) & 0xFFFF) as u16,
+            offset_high: (offset >> 32) as u32,
+            reserved: 0x0,
+        }
+    }
+
+    /// Create a new IDT entry for a syscall handler function.
+    /// This entry is a trap gate and has DPL=3, so it can be called from user mode.
+    pub fn syscall_gate(handler: extern "C" fn()) -> IdtEntry {
+        IdtEntry::new_trap_gate(handler as u64)
     }
 }
 
@@ -275,7 +300,7 @@ impl Idt {
                 interrupt_handler!(0x7d, dispatch_interrupt),
                 interrupt_handler!(0x7e, dispatch_interrupt),
                 interrupt_handler!(0x7f, dispatch_interrupt),
-                interrupt_handler!(0x80, dispatch_interrupt),
+                interrupt_handler!(0x80, dispatch_interrupt),//IdtEntry::syscall_gate(dispatch_syscall),//<- trap gate 0x80
                 interrupt_handler!(0x81, dispatch_interrupt),
                 interrupt_handler!(0x82, dispatch_interrupt),
                 interrupt_handler!(0x83, dispatch_interrupt),

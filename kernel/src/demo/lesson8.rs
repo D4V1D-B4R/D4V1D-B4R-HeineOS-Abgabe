@@ -1,4 +1,4 @@
-//use core::arch::asm;
+use core::arch::asm;
 
 use crate::device::pit;
 use crate::device::terminal::terminal;
@@ -36,9 +36,9 @@ fn user_thread() {
     let id = scheduler().get_active_tid();
     let cols = 80;
 
-    /*unsafe {
+    unsafe {
         asm!("in al, 0x60");
-    }*/
+    }
 
     for i in 0..cols - 1 {
         {

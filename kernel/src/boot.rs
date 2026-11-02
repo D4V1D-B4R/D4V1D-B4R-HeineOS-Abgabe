@@ -26,6 +26,7 @@ use log::{LevelFilter, debug, error, info};
 use tar_no_std::TarArchiveRef;
 use uefi::mem::memory_map::MemoryMapOwned;
 use crate::allocator::global;
+use crate::demo::lesson9;
 use crate::device::framebuffer::{self, Framebuffer};
 use crate::device::{cpu, keyboard, pic, pit};
 use crate::device::terminal::{self, terminal};
@@ -50,6 +51,7 @@ mod filesystem;
 mod videopoker;
 mod sheldon;
 mod paging;
+mod syscall;
 
 unsafe extern "C" {
     fn load_gdt();
@@ -163,6 +165,7 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
         terminal().lock().clear();
     }
 
+    //lesson9::syscall_demo();
     sheldon::shell::shell();
 
     // Lessons
