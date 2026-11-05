@@ -14,6 +14,7 @@ use core::fmt::Display;
 use core::sync::atomic::AtomicUsize;
 use crate::consts::STACK_SIZE;
 use crate::device::cpu;
+use crate::syscall::user_api::usr_thread_exit;
 use crate::thread::scheduler::scheduler;
 
 static THREAD_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -326,7 +327,8 @@ impl Thread {
         let entry = self.entry;
         entry();
 
-        loop {} // User threads may currently not exit
+        //loop {} // User threads may currently not exit
+        usr_thread_exit();
     }
 
     /// Get a pointer to the top of the given stack.

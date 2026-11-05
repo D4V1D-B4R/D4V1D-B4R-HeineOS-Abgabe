@@ -5,7 +5,10 @@
  * License: GPLv3
  */
 
-use crate::syscall::user_api::usr_hello_world;
+use alloc::format;
+use alloc::string::ToString;
+
+use crate::syscall::user_api::*;
 use crate::thread::scheduler::scheduler;
 use crate::thread::thread::Thread;
 
@@ -24,7 +27,12 @@ pub fn syscall_demo() {
 /// the given line and the current system time are printed to the terminal.
 fn syscall_test_thread() {
     usr_hello_world();
+    let sus = usr_get_system_time();
+    let id = usr_get_thread_id();
+    usr_print("test");
 
+
+    usr_thread_exit();
     loop {
         // TODO: Extend demo to show more system calls.
     }

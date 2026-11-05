@@ -11,7 +11,13 @@
  */
 
 use core::arch::{naked_asm};
+use crate::syscall::functions::exit_thread::sys_thread_exit;
+use crate::syscall::functions::get_thread_id::sys_thread_get_id;
 use crate::syscall::functions::hello::sys_hello_world;
+use crate::syscall::functions::key_event::sys_get_key_event;
+use crate::syscall::functions::print_msg::sys_print;
+use crate::syscall::functions::systime::sys_get_system_time;
+use crate::syscall::functions::yield_thread::sys_thread_yield;
 use crate::syscall::user_api::SyscallFunction;
 
 /// Global syscall function table.
@@ -28,7 +34,13 @@ impl SyscallFunctionTable {
     pub const fn new() -> SyscallFunctionTable {
         SyscallFunctionTable {
             table: [
-                sys_hello_world as *const u64
+                sys_thread_exit as *const u64,
+                sys_thread_get_id as *const u64,
+                sys_hello_world as *const u64,
+                sys_get_key_event as *const u64,
+                sys_print as *const u64,
+                sys_get_system_time as *const u64,
+                sys_thread_yield as *const u64
             ],
         }
     }

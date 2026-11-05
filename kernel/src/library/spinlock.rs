@@ -10,6 +10,7 @@ use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{AtomicBool, Ordering};
 
+use crate::syscall::user_api::usr_thread_yield;
 use crate::thread::scheduler::scheduler;
 
 /// A simple spinlock implementation that spins in a loop until it acquires the lock.
@@ -66,6 +67,7 @@ impl<T> Spinlock<T> {
                 break s;
             }
             //scheduler().yield_cpu();
+            usr_thread_yield();
         };
 
         spinlock
