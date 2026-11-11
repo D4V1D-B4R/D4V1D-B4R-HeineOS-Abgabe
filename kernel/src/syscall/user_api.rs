@@ -12,13 +12,15 @@
 
 use core::arch::asm;
 
+use crate::device::key::KeyEvent;
+
 /// System call numbers available to user programs.
 #[repr(u64)]
 pub enum SyscallFunction {
     ExitThread,
     GetThreadID,
     HelloWorld,
-    KeyEvent,
+    KeyEventSysC,
     PrintString,
     SysTime,
     YieldThread,
@@ -39,8 +41,19 @@ pub fn usr_get_thread_id() -> u64 {
     unsafe { syscall0(SyscallFunction::GetThreadID) }
 }
 
-pub fn usr_get_key_event() {//TODO: pass argument!
-    unsafe { syscall0(SyscallFunction::KeyEvent); }
+pub fn usr_get_key_event() -> Option<KeyEvent>{
+    let mut event = KeyEvent::new();
+    let event_ptr = &mut event as *mut KeyEvent as u64;
+
+    let mut was_avaible = 0;
+
+    unsafe { was_avaible = syscall1(SyscallFunction::KeyEventSysC, event_ptr) }
+    if was_avaible != 0 {
+        return Some(event);
+    }
+    else {
+        None
+    }
 }
 
 pub fn usr_print(msg: &str) {

@@ -165,7 +165,7 @@ pub extern "C" fn main(multiboot_magic: u32, multiboot: &multiboot::BootInfo) ->
         terminal().lock().clear();
     }
 
-    lesson9::syscall_demo();
+    //lesson9::syscall_demo();
     sheldon::shell::shell();
 
     // Lessons

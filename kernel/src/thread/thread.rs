@@ -279,11 +279,8 @@ impl Thread {
         let frame_addr = kernel_stack_top - SAFETY_MARGIN;
 
         // Top des User-Stacks bestimmen.
-        // Beim Eintritt in eine normale x86-64-Funktion soll RSP
-        // auf 8 modulo 16 ausgerichtet sein.
         let user_stack_top =
             Self::get_top_of_stack(&self.user_stack) as usize;
-        //let user_rsp = (user_stack_top & !0xF) - 8;
 
         // Den IRETQ-Stackframe auf dem Kernel-Stack aufbauen.
         let frame = frame_addr as *mut usize;

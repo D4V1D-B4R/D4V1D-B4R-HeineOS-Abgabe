@@ -14,6 +14,7 @@ use crate::device::pic::PIC;
 use crate::interrupt::{self, dispatcher};
 use crate::interrupt::isr::ISR;
 use crate::library::once::Once;
+use crate::syscall::user_api::usr_thread_yield;
 use crate::thread::scheduler::scheduler;
 
 /// Get the current system time in milliseconds.
@@ -25,6 +26,7 @@ pub fn system_time() -> usize {
 pub fn wait(ms: usize) {
     let start_time = system_time();
     while system_time() - start_time < ms {
+        usr_thread_yield();
         //scheduler().yield_cpu(); //das geht nicht im user mode
     }
 }
@@ -99,7 +101,8 @@ impl ISR for TimerISR {
         // context switch
         if sys_time % self.interval_ms == 0{
             unsafe { interrupt::dispatcher::unlock_int_vectors() };
-            scheduler().yield_cpu();
+            //scheduler().yield_cpu();
+            //usr_thread_yield();
         }   
     }
 }
